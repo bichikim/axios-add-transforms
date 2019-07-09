@@ -12,7 +12,7 @@ describe('lib/transforms', function test() {
     const transforms = new Transforms({
       first,
       final: {
-        request: [...finalRequest, (data) => (JSON.stringify(data))],
+        request: finalRequest,
         response: finalResponse,
       },
       matchers: [
@@ -20,13 +20,16 @@ describe('lib/transforms', function test() {
         {
           test: /^\/bizs\//,
           transform: {
-            request: ({data: {foo, bar}, headers, params}) => ({
-              data: {
-                '_foo': foo,
-                '_bar': bar,
+            request: ({data, headers, params}) => ({
+              data: data && {
+                '_foo': data.foo,
+                '_bar': data.bar,
               },
               headers,
-              params,
+              params: params && {
+                '_foo': params.foo,
+                '_bar': params.bar,
+              },
             }),
             response: ({result: {'_id': id, '_name': name}}) => ({
               result: {
@@ -59,6 +62,14 @@ describe('lib/transforms', function test() {
         },
       }
 
+      const requestParam = {
+        url: '/bizs/',
+        params: {
+          foo: 'foo',
+          bar: 'bar',
+        },
+      }
+
       const expectData = {
         '_foo': 'foo',
         '_bar': 'bar',
@@ -77,6 +88,16 @@ describe('lib/transforms', function test() {
         const result = await myAxios({...request, method: 'get'})
         expect(mock.history.get).to.length(1)
         expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+        expect(result.data).to.deep.equal(expectResponse)
+        mock.resetHistory()
+      }
+
+      // get
+      {
+        mock.onGet('/bizs/').reply(200, response)
+        const result = await myAxios({...requestParam, method: 'get'})
+        expect(mock.history.get).to.length(1)
+        expect(mock.history.get[0].params).to.deep.equal(expectData)
         expect(result.data).to.deep.equal(expectResponse)
         mock.resetHistory()
       }
@@ -121,224 +142,105 @@ describe('lib/transforms', function test() {
         mock.resetHistory()
       }
     })
+    it('should run with method', async function test() {
+      const myAxios = axios.create()
+      const mock = new MockAdapter(myAxios)
+      const transforms = new Transforms({
+        matchers: [
+          {
+            test: /^\/bizs\//,
+            method: 'get',
+            transform: {
+              request: ({data, headers, params}) => ({
+                data: data && {
+                  '_foo': data.foo,
+                  '_bar': data.bar,
+                },
+                headers,
+                params: params && {
+                  '_foo': params.foo,
+                  '_bar': params.bar,
+                },
+              }),
+              response: ({result: {'_id': id, '_name': name}}) => ({
+                result: {
+                  id, name,
+                },
+              }),
+            },
+          },
+        ],
+      })
+      transforms.addInterceptors(myAxios)
 
-  //   it('should run without matchers', async function test() {
-  //     const request = {url: '/bizs/'}
-  //
-  //     const transforms = new Transforms({
-  //       final: {
-  //         request: (data) => (JSON.stringify(data)),
-  //       },
-  //     })
-  //     const mock = new MockAdapter(axios)
-  //     mock.onGet('/bizs/').reply(200)
-  //     const result = await axios(transforms.addTransforms({...request}))
-  //     expect(mock.history.get).length(1)
-  //     expect(result).to.be.an('object')
-  //   })
-  //
-  //   it('should run with a matched method matcher', async function test() {
-  //     const method: Method = 'get'
-  //     const request = {
-  //       url: '/bizs/', method, data: {
-  //         foo: 'foo',
-  //         bar: 'bar',
-  //       },
-  //     }
-  //
-  //     const transforms = new Transforms({
-  //       final: {
-  //         request: (data) => (JSON.stringify(data)),
-  //       },
-  //       matchers: [
-  //         {
-  //           test: /^\/bizs\//,
-  //           method: 'get',
-  //           transform: {
-  //             request: ({foo, bar}) => ({'_foo': foo, '_bar': bar}),
-  //           },
-  //         },
-  //       ],
-  //     })
-  //     const mock = new MockAdapter(axios)
-  //     mock.onGet('/bizs/').reply(200)
-  //     const result = await axios(transforms.addTransforms({...request}))
-  //     expect(mock.history.get).length(1)
-  //     expect(JSON.parse(mock.history.get[0].data)).to.deep.equal({
-  //       '_foo': 'foo',
-  //       '_bar': 'bar',
-  //     })
-  //     expect(result).to.be.an('object')
-  //   })
-  //
-  //   it('should run without a matched matcher', async function test() {
-  //     const method: Method = 'get'
-  //     const request = {
-  //       url: '/bizs/', method, data: {
-  //         foo: 'foo',
-  //         bar: 'bar',
-  //       },
-  //     }
-  //
-  //     const transforms = new Transforms({
-  //       final: {
-  //         request: (data) => (JSON.stringify(data)),
-  //       },
-  //       matchers: [
-  //         {
-  //           test: /^\/bizs\//,
-  //           method: 'post',
-  //           transform: {
-  //             request: ({foo, bar}) => ({'_foo': foo, '_bar': bar}),
-  //           },
-  //         },
-  //       ],
-  //     })
-  //     const mock = new MockAdapter(axios)
-  //     mock.onGet('/bizs/').reply(200)
-  //     const result = await axios(transforms.addTransforms({...request}))
-  //     expect(mock.history.get).length(1)
-  //     expect(JSON.parse(mock.history.get[0].data)).to.deep.equal({
-  //       'foo': 'foo',
-  //       'bar': 'bar',
-  //     })
-  //     expect(result).to.be.an('object')
-  //   })
-  //
-  //   it('should run with first transforms', async function test() {
-  //     const {transforms, mock} = newTest({
-  //       first: {
-  //         request: ({'$foo': foo, '$bar': bar}) => ({bar, foo}),
-  //       },
-  //     })
-  //
-  //     const request = {
-  //       url: '/bizs/',
-  //       data: {
-  //         '$foo': 'foo',
-  //         '$bar': 'bar',
-  //       },
-  //     }
-  //
-  //     const response = {
-  //       result: {
-  //         '_id': 1,
-  //         '_name': 'foo',
-  //       },
-  //     }
-  //
-  //     mock.onGet('/bizs/').reply(200, response)
-  //     const result = await axios(transforms.addTransforms({...request, method: 'get'}))
-  //     expect(mock.history.get).length(1)
-  //     expect(JSON.parse(mock.history.get[0].data)).to.deep.equal({
-  //       '_foo': 'foo',
-  //       '_bar': 'bar',
-  //     })
-  //     expect(result).to.be.an('object')
-  //   })
-  // })
+      const data = {
+        foo: 'foo',
+        bar: 'bar',
+      }
+      const request = {
+        url: '/bizs/',
+        data,
+      }
 
-  // describe('addInterceptors',  function test() {
-  //   it('should run', async function test() {
-  //     const myAxios = axios.create({
-  //       baseURL: 'https://somewhere.com',
-  //     })
-  //     const response = {
-  //       result: {
-  //         '_id': 1,
-  //         '_name': 'foo',
-  //       },
-  //     }
-  //
-  //     const request = {
-  //       url: '/bizs/', data: {
-  //         foo: 'foo',
-  //         bar: 'bar',
-  //       },
-  //     }
-  //
-  //     const expectData = {
-  //       '_foo': 'foo',
-  //       '_bar': 'bar',
-  //     }
-  //
-  //     const transforms = new Transforms({
-  //       matchers: [
-  //         {
-  //           test: /^\/bizs\//,
-  //           transform: {
-  //             request: ({foo, bar}) => ({
-  //               '_foo': foo,
-  //               '_bar': bar,
-  //             }),
-  //             response: ({result: {'_id': id, '_name': name}}) => ({
-  //               result: {
-  //                 id, name,
-  //               },
-  //             }),
-  //           },
-  //         },
-  //       ],
-  //     })
-  //     transforms.addInterceptors(myAxios)
-  //     const mock = new MockAdapter(myAxios)
-  //     mock.onGet(('/bizs/')).reply(200, response)
-  //     const result = await myAxios({...request, method: 'get'})
-  //     expect(mock.history.get).length(1)
-  //     expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
-  //     expect(result).to.be.an('object')
-  //   })
-  //   it('should run', async function test() {
-  //     const myAxios = axios.create({
-  //       baseURL: 'https://somewhere.com',
-  //     })
-  //     const response = {
-  //       result: {
-  //         '_id': 1,
-  //         '_name': 'foo',
-  //       },
-  //     }
-  //
-  //     const request = {
-  //       url: '/bizs/', data: {
-  //         foo: 'foo',
-  //         bar: 'bar',
-  //       },
-  //     }
-  //
-  //     const expectData = {
-  //       '_foo': 'foo',
-  //       '_bar': 'bar',
-  //     }
-  //
-  //     const transforms = new Transforms({
-  //       final: {
-  //         request: (data) => (JSON.stringify(data)),
-  //       },
-  //       matchers: [
-  //         {
-  //           test: /^\/bizs\//,
-  //           transform: {
-  //             request: ({foo, bar}) => ({
-  //               '_foo': foo,
-  //               '_bar': bar,
-  //             }),
-  //             response: ({result: {'_id': id, '_name': name}}) => ({
-  //               result: {
-  //                 id, name,
-  //               },
-  //             }),
-  //           },
-  //         },
-  //       ],
-  //     })
-  //     transforms.addInterceptors(myAxios, false)
-  //     const mock = new MockAdapter(myAxios)
-  //     mock.onGet(('/bizs/')).reply(200, response)
-  //     const result = await myAxios({...request, method: 'get'})
-  //     expect(mock.history.get).length(1)
-  //     expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
-  //     expect(result).to.be.an('object')
-  //   })
+      const response = {
+        result: {
+          '_id': 1,
+          '_name': 'foo',
+        },
+      }
+      const expectData = {
+        '_foo': 'foo',
+        '_bar': 'bar',
+      }
+      const expectResponse = {
+        result: {
+          id: 1,
+          name: 'foo',
+        },
+      }
+
+      {
+        mock.onGet('/bizs/').reply(200, response)
+        const result = await myAxios({...request, method: 'get'})
+        expect(mock.history.get).to.length(1)
+        expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+        expect(result.data).to.deep.equal(expectResponse)
+        mock.resetHistory()
+      }
+      // no matcher
+      {
+        mock.onPost('/bizs/').reply(200, response)
+        const result = await myAxios({...request, method: 'post'})
+        expect(mock.history.post).to.length(1)
+        expect(JSON.parse(mock.history.post[0].data)).to.deep.equal(data)
+        expect(result.data).to.deep.equal(response)
+        mock.resetHistory()
+      }
+    })
+  })
+
+  describe('confirmTransforms', function test() {
+    it('should return confirmTransSet', function test() {
+      const {confirmTransforms} = Transforms
+      {
+        const result = confirmTransforms()
+        expect(result.response).to.be.an('array')
+        expect(result.request).to.be.an('array')
+      }
+      {
+        const result = confirmTransforms({
+          response: [],
+        })
+        expect(result.response).to.be.an('array')
+        expect(result.request).to.be.an('array')
+      }
+      {
+        const result = confirmTransforms({
+          request: [],
+        })
+        expect(result.response).to.be.an('array')
+        expect(result.request).to.be.an('array')
+      }
+    })
   })
 })
