@@ -10,46 +10,6 @@
 [NPM LINK]:https://www.npmjs.org/package/axios-add-transforms
 ## How to use
 
-### to add transforms in a config  
-```typescript
-import {AxiosRequestConfig} from 'axios'
-import Transforms from './src'
-import axios, {Method} from 'axios'
-
-// refer to TransformsOptions
-const transforms = new Transforms({
-  // first: ...
- 
-  final: {
-    request: (data) => (JSON.stringify(data)),
-    // response: ...
-  },
-  matchers: [
-    {
-      test: /^\/users\//,
-      transform: {
-        request: ({foo, bar}) => ({'_foo': foo, '_bar': bar}),
-        // response: ...
-      }
-    }
-  ]
-})
-
-const config: AxiosRequestConfig = {
-  url: '/users/',
-  data: {
-    foo: 'foo',
-    bar: 'bar',
-  }
-}
-
-// request data will ba {_foo: 'foo', _bar: 'bar'}
-axios(transforms.addTransforms(config)).then(() => {
-  
-})
-
-```
-
 ### to add an interceptor
 
 
@@ -66,7 +26,8 @@ const transforms = new Transforms({
     {
       test: /^\/users\//,
       transform: {
-        request: ({foo, bar}) => ({'_foo': foo, '_bar': bar}),
+        request: ({data: {foo, bar}, params, headers}) =>
+         ({data: {'_foo': foo, '_bar': bar}, params, headers}),
         // response: ...
       }
     }

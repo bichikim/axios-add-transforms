@@ -1,14 +1,3 @@
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 import { toUpper } from 'lodash';
 var Transforms = /** @class */ (function () {
     function Transforms(options) {
@@ -57,70 +46,45 @@ var Transforms = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Transforms.prototype.addTransforms = function (config) {
-        var _a, _b, _c, _d;
-        var 
-        /* istanbul ignore next The test dose not need to check*/
-        _e = config.url, 
-        /* istanbul ignore next The test dose not need to check*/
-        url = _e === void 0 ? '/' : _e, transformRequest = config.transformRequest, transformResponse = config.transformResponse;
-        var confirmTransforms = Transforms.confirmTransforms;
-        var matchers = this.matchers;
-        var _f = this._options, first = _f.first, final = _f.final;
-        var finalTransformSet = confirmTransforms(final);
-        var firstTransformSet = confirmTransforms(first);
-        var currentTransformSet = confirmTransforms({
-            request: transformRequest,
-            response: transformResponse,
-        });
-        var newConfig = __assign({}, config, { transformRequest: firstTransformSet.request.concat(currentTransformSet.request), transformResponse: firstTransformSet.response.concat(currentTransformSet.response) });
-        for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
-            var matcher = matchers_1[_i];
-            var test_1 = matcher.test;
-            var methodTest = false;
-            var method = toUpper(matcher.method);
-            if (method === 'ALL' || !method || !config.method) {
-                methodTest = true;
-            }
-            else {
-                methodTest = toUpper(config.method) === method;
-            }
-            if (test_1.test(url) && methodTest) {
-                var transformSet = confirmTransforms(matcher.transform);
-                (_a = newConfig.transformRequest).push.apply(_a, transformSet.request);
-                (_b = newConfig.transformResponse).push.apply(_b, transformSet.response);
-                break;
-            }
-        }
-        (_c = newConfig.transformRequest).push.apply(_c, finalTransformSet.request);
-        (_d = newConfig.transformResponse).push.apply(_d, finalTransformSet.response);
-        return newConfig;
-    };
-    Transforms.prototype.addInterceptors = function (axios, addExisting) {
+    Transforms.prototype.addInterceptors = function (axios) {
         var _this = this;
-        if (addExisting === void 0) { addExisting = true; }
         axios.interceptors.request.use(function (config) {
-            var confirmTransforms = Transforms.confirmTransforms;
-            var currentTransformSet = confirmTransforms({
-                request: config.transformRequest,
-                response: config.transformResponse,
-            });
-            var newConfig = _this.addTransforms(__assign({}, config, { transformRequest: [], transformResponse: [] }));
-            /* istanbul ignore else*/
-            if (addExisting) {
-                var transformRequest = newConfig.transformRequest, transformResponse = newConfig.transformResponse;
-                /* istanbul ignore else*/
-                if (Array.isArray(transformRequest)) {
-                    transformRequest.push.apply(transformRequest, currentTransformSet.request);
-                }
-                /* istanbul ignore else*/
-                if (Array.isArray(transformResponse)) {
-                    transformResponse.push.apply(transformResponse, currentTransformSet.request);
-                }
+            var mather = _this._getMatcher(config.url, config.method);
+            if (!mather) {
+                return config;
             }
-            return newConfig;
+            var transformSet = Transforms.confirmTransforms(mather.transform);
+            var transformedData = transformSet.request.reduce(function (result, transform) {
+                return transform(result);
+            }, {
+                data: config.data,
+                headers: config.headers,
+                params: config.params,
+            });
+            return Object.assign(config, transformedData, {
+                transformResponse: transformSet.response,
+            });
         });
         return axios;
+    };
+    Transforms.prototype._getMatcher = function (url, _method) {
+        if (url === void 0) { url = '/'; }
+        var matchers = this.matchers;
+        for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
+            var matcher = matchers_1[_i];
+            var method = toUpper(_method);
+            var matcherMethod = toUpper(matcher.method);
+            var matchedMethod = false;
+            if (matcher.method === 'ALL' || !matcher.method || !_method) {
+                matchedMethod = true;
+            }
+            else {
+                matchedMethod = method === matcherMethod;
+            }
+            if (matcher.test.test(url) && matchedMethod) {
+                return matcher;
+            }
+        }
     };
     return Transforms;
 }());

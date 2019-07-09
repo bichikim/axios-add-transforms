@@ -1,10 +1,16 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method } from 'axios';
+import { AxiosInstance, AxiosTransformer, Method } from 'axios';
+interface TransFormRequestData {
+    data: any;
+    headers: any;
+    params: any;
+}
+declare type Transformer = (data: TransFormRequestData) => TransFormRequestData;
 export interface TransformSetArray {
     request: AxiosTransformer[];
     response: AxiosTransformer[];
 }
 export interface TransformSet {
-    request?: AxiosTransformer | AxiosTransformer[];
+    request?: Transformer | Transformer[];
     response?: AxiosTransformer | AxiosTransformer[];
 }
 export interface Matcher {
@@ -22,6 +28,7 @@ export default class Transforms {
     private readonly _options;
     constructor(options: TransformsOptions);
     readonly matchers: Matcher[];
-    addTransforms(config: AxiosRequestConfig): AxiosRequestConfig;
-    addInterceptors(axios: AxiosInstance, addExisting?: boolean): AxiosInstance;
+    addInterceptors(axios: AxiosInstance): AxiosInstance;
+    private _getMatcher;
 }
+export {};
