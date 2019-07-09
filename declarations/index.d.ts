@@ -1,4 +1,4 @@
-import { AxiosRequestConfig, AxiosTransformer, Method } from 'axios';
+import { AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method } from 'axios';
 export interface TransformSetArray {
     request: AxiosTransformer[];
     response: AxiosTransformer[];
@@ -23,4 +23,5 @@ export default class Transforms {
     constructor(options: TransformsOptions);
     readonly matchers: Matcher[];
     addTransforms(config: AxiosRequestConfig): AxiosRequestConfig;
+    addInterceptors(axios: AxiosInstance, addExisting?: boolean): AxiosInstance;
 }

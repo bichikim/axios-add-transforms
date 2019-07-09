@@ -96,6 +96,32 @@ var Transforms = /** @class */ (function () {
         (_d = newConfig.transformResponse).push.apply(_d, finalTransformSet.response);
         return newConfig;
     };
+    Transforms.prototype.addInterceptors = function (axios, addExisting) {
+        var _this = this;
+        if (addExisting === void 0) { addExisting = true; }
+        axios.interceptors.request.use(function (config) {
+            var confirmTransforms = Transforms.confirmTransforms;
+            var currentTransformSet = confirmTransforms({
+                request: config.transformRequest,
+                response: config.transformResponse,
+            });
+            var newConfig = _this.addTransforms(__assign({}, config, { transformRequest: [], transformResponse: [] }));
+            /* istanbul ignore else*/
+            if (addExisting) {
+                var transformRequest = newConfig.transformRequest, transformResponse = newConfig.transformResponse;
+                /* istanbul ignore else*/
+                if (Array.isArray(transformRequest)) {
+                    transformRequest.push.apply(transformRequest, currentTransformSet.request);
+                }
+                /* istanbul ignore else*/
+                if (Array.isArray(transformResponse)) {
+                    transformResponse.push.apply(transformResponse, currentTransformSet.request);
+                }
+            }
+            return newConfig;
+        });
+        return axios;
+    };
     return Transforms;
 }());
 export default Transforms;

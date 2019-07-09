@@ -1,4 +1,4 @@
-import {AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
 import {toUpper} from 'lodash'
 
 export interface TransformSetArray {
@@ -71,7 +71,8 @@ export default class Transforms {
     const {
       /* istanbul ignore next The test dose not need to check*/
       url = '/',
-      transformRequest, transformResponse} = config
+      transformRequest, transformResponse,
+    } = config
     const {confirmTransforms} = Transforms
     const {matchers} = this
     const {first, final} = this._options
@@ -114,4 +115,35 @@ export default class Transforms {
     return newConfig
   }
 
+  addInterceptors(
+    axios: AxiosInstance,
+    addExisting: boolean = true,
+  ) {
+    axios.interceptors.request.use((config) => {
+      const {confirmTransforms} = Transforms
+      const currentTransformSet = confirmTransforms({
+        request: config.transformRequest,
+        response: config.transformResponse,
+      })
+      const newConfig = this.addTransforms({
+        ...config,
+        transformRequest: [],
+        transformResponse: [],
+      })
+      /* istanbul ignore else*/
+      if(addExisting) {
+        const {transformRequest, transformResponse} = newConfig
+        /* istanbul ignore else*/
+        if(Array.isArray(transformRequest)) {
+          transformRequest.push(...currentTransformSet.request)
+        }
+        /* istanbul ignore else*/
+        if(Array.isArray(transformResponse)) {
+          transformResponse.push(...currentTransformSet.request)
+        }
+      }
+      return newConfig
+    })
+    return axios
+  }
 }

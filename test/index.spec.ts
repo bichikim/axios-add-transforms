@@ -1,10 +1,10 @@
-import axios, {Method} from 'axios'
+import axios, {Method, AxiosInstance} from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import Transforms, {TransformsOptions} from '../src/index'
 
 describe('lib/transforms', function test() {
-  const newTest = (options: TransformsOptions = {}) => {
-    const mock = new MockAdapter(axios)
+  const newTest = (options: TransformsOptions = {}, _axios?: AxiosInstance ) => {
+    const mock = new MockAdapter(_axios || axios)
     const {final = {}, matchers = [], first} = options
     const finalRequest = (final.request || []) as any[]
     const finalResponse = (final.response || []) as any[]
@@ -207,7 +207,8 @@ describe('lib/transforms', function test() {
       })
 
       const request = {
-        url: '/bizs/', data: {
+        url: '/bizs/',
+        data: {
           '$foo': 'foo',
           '$bar': 'bar',
         },
@@ -231,4 +232,107 @@ describe('lib/transforms', function test() {
     })
   })
 
+  describe('addInterceptors',  function test() {
+    it('should run', async function test() {
+      const myAxios = axios.create({
+        baseURL: 'https://somewhere.com',
+      })
+      const response = {
+        result: {
+          '_id': 1,
+          '_name': 'foo',
+        },
+      }
+
+      const request = {
+        url: '/bizs/', data: {
+          foo: 'foo',
+          bar: 'bar',
+        },
+      }
+
+      const expectData = {
+        '_foo': 'foo',
+        '_bar': 'bar',
+      }
+
+      const transforms = new Transforms({
+        matchers: [
+          {
+            test: /^\/bizs\//,
+            transform: {
+              request: ({foo, bar}) => ({
+                '_foo': foo,
+                '_bar': bar,
+              }),
+              response: ({result: {'_id': id, '_name': name}}) => ({
+                result: {
+                  id, name,
+                },
+              }),
+            },
+          },
+        ],
+      })
+      transforms.addInterceptors(myAxios)
+      const mock = new MockAdapter(myAxios)
+      mock.onGet(('/bizs/')).reply(200, response)
+      const result = await myAxios({...request, method: 'get'})
+      expect(mock.history.get).length(1)
+      expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+      expect(result).to.be.an('object')
+    })
+    it('should run', async function test() {
+      const myAxios = axios.create({
+        baseURL: 'https://somewhere.com',
+      })
+      const response = {
+        result: {
+          '_id': 1,
+          '_name': 'foo',
+        },
+      }
+
+      const request = {
+        url: '/bizs/', data: {
+          foo: 'foo',
+          bar: 'bar',
+        },
+      }
+
+      const expectData = {
+        '_foo': 'foo',
+        '_bar': 'bar',
+      }
+
+      const transforms = new Transforms({
+        final: {
+          request: (data) => (JSON.stringify(data)),
+        },
+        matchers: [
+          {
+            test: /^\/bizs\//,
+            transform: {
+              request: ({foo, bar}) => ({
+                '_foo': foo,
+                '_bar': bar,
+              }),
+              response: ({result: {'_id': id, '_name': name}}) => ({
+                result: {
+                  id, name,
+                },
+              }),
+            },
+          },
+        ],
+      })
+      transforms.addInterceptors(myAxios, false)
+      const mock = new MockAdapter(myAxios)
+      mock.onGet(('/bizs/')).reply(200, response)
+      const result = await myAxios({...request, method: 'get'})
+      expect(mock.history.get).length(1)
+      expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+      expect(result).to.be.an('object')
+    })
+  })
 })
