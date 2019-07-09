@@ -60,8 +60,22 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             configurable: true
         });
         Transforms.prototype.addTransforms = function (config) {
-            var _a = config.url, url = _a === void 0 ? '/' : _a, transformRequest = config.transformRequest, transformResponse = config.transformResponse;
+            var _a, _b, _c, _d;
+            var 
+            /* istanbul ignore next The test dose not need to check*/
+            _e = config.url, 
+            /* istanbul ignore next The test dose not need to check*/
+            url = _e === void 0 ? '/' : _e, transformRequest = config.transformRequest, transformResponse = config.transformResponse;
+            var confirmTransforms = Transforms.confirmTransforms;
             var matchers = this.matchers;
+            var _f = this._options, first = _f.first, final = _f.final;
+            var finalTransformSet = confirmTransforms(final);
+            var firstTransformSet = confirmTransforms(first);
+            var currentTransformSet = confirmTransforms({
+                request: transformRequest,
+                response: transformResponse,
+            });
+            var newConfig = __assign({}, config, { transformRequest: firstTransformSet.request.concat(currentTransformSet.request), transformResponse: firstTransformSet.response.concat(currentTransformSet.response) });
             for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
                 var matcher = matchers_1[_i];
                 var test_1 = matcher.test;
@@ -71,22 +85,18 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
                     methodTest = true;
                 }
                 else {
-                    methodTest = config.method === method;
+                    methodTest = lodash_1.toUpper(config.method) === method;
                 }
                 if (test_1.test(url) && methodTest) {
-                    var confirmTransforms = Transforms.confirmTransforms;
                     var transformSet = confirmTransforms(matcher.transform);
-                    var _b = this._options, first = _b.first, final = _b.final;
-                    var currentTransformSet = confirmTransforms({
-                        request: transformRequest,
-                        response: transformResponse,
-                    });
-                    var finalTransformSet = confirmTransforms(final);
-                    var firstTransformSet = confirmTransforms(first);
-                    return __assign({}, config, { transformRequest: firstTransformSet.request.concat(currentTransformSet.request, transformSet.request, finalTransformSet.request), transformResponse: firstTransformSet.response.concat(currentTransformSet.response, transformSet.response, finalTransformSet.response) });
+                    (_a = newConfig.transformRequest).push.apply(_a, transformSet.request);
+                    (_b = newConfig.transformResponse).push.apply(_b, transformSet.response);
+                    break;
                 }
             }
-            return config;
+            (_c = newConfig.transformRequest).push.apply(_c, finalTransformSet.request);
+            (_d = newConfig.transformResponse).push.apply(_d, finalTransformSet.response);
+            return newConfig;
         };
         return Transforms;
     }());

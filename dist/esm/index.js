@@ -9,209 +9,94 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { cloneDeep, get, merge, omit, pick } from 'lodash';
-import Cookies from './cookie';
-export var DEFAULT_KEY = 'vuex';
-export var FILTERS_KEY = 'vuex-filters';
-export var DEFAULT_SAVE_METHOD = 'localStorage';
-export var DEFAULT_MUTATION_NAME = '__RESTORE_MUTATION';
-// saving mutation name
-function storeExceptOrOnly(_state, except, only) {
-    var state = cloneDeep(_state);
-    var clonedState = {};
-    if (!only && !except) {
-        return clonedState;
+import { toUpper } from 'lodash';
+var Transforms = /** @class */ (function () {
+    function Transforms(options) {
+        this._options = options;
     }
-    if (only) {
-        clonedState = pick(state, only);
-    }
-    else {
-        clonedState = state;
-    }
-    if (except) {
-        clonedState = omit(clonedState, except);
-    }
-    return clonedState;
-}
-var VuexStorage = /** @class */ (function () {
-    function VuexStorage(options) {
-        var _this = this;
-        if (options === void 0) { options = {}; }
-        var _a = options.restore, restore = _a === void 0 ? true : _a, _b = options.strict, strict = _b === void 0 ? false : _b, _c = options.key, key = _c === void 0 ? DEFAULT_KEY : _c, _d = options.mutationName, mutationName = _d === void 0 ? DEFAULT_MUTATION_NAME : _d, _e = options.storageFirst, storageFirst = _e === void 0 ? true : _e, dynamicFilter = options.filter, clientSide = options.clientSide, _f = options.filterSaveKey, filterSaveKey = _f === void 0 ? FILTERS_KEY : _f, _g = options.filterSaveMethod, filterSaveMethod = _g === void 0 ? DEFAULT_SAVE_METHOD : _g;
-        var isClient = function () {
-            if (typeof clientSide === 'function') {
-                return clientSide(_this._store, options);
-            }
-            if (typeof clientSide === 'boolean') {
-                return clientSide;
-            }
-            return typeof document === 'object';
-        };
-        var getStateFilter = function (dynamicFilter) {
+    Transforms.confirmTransforms = function (transformSet) {
+        if (!transformSet) {
             return {
-                cookie: get(_this._store.state, dynamicFilter.cookie),
-                session: get(_this._store.state, dynamicFilter.session),
-                local: get(_this._store.state, dynamicFilter.local),
+                request: [],
+                response: [],
             };
+        }
+        var request;
+        var response;
+        if (!transformSet.request) {
+            request = [];
+        }
+        else if (Array.isArray(transformSet.request)) {
+            request = transformSet.request;
+        }
+        else {
+            request = [transformSet.request];
+        }
+        if (!transformSet.response) {
+            response = [];
+        }
+        else if (Array.isArray(transformSet.response)) {
+            response = transformSet.response;
+        }
+        else {
+            response = [transformSet.response];
+        }
+        return {
+            request: request,
+            response: response,
         };
-        var filters = function () {
-            if (!dynamicFilter) {
-                return {};
+    };
+    Object.defineProperty(Transforms.prototype, "matchers", {
+        get: function () {
+            var matchers = this._options.matchers;
+            if (!matchers) {
+                return [];
             }
-            return getStateFilter(dynamicFilter);
-        };
-        this.mutationName = mutationName;
-        this.mutation = function (state, payload) {
-            // eslint-disable-next-line consistent-this
-            var that = this;
-            Object.keys(payload).forEach(function (moduleKey) {
-                that._vm.$set(state, moduleKey, payload[moduleKey]);
-            });
-        };
-        this.clear = function (context) {
-            var cookies = new Cookies(context, isClient());
-            cookies.set(key, {}, { path: '/' });
-            if (!isClient()) {
-                return;
-            }
-            var sessionStorage = window.sessionStorage, localStorage = window.localStorage;
-            sessionStorage.setItem(key, '{}');
-            localStorage.setItem(key, '{}');
-        };
-        var mergeState = function (state) {
-            var store = _this._store;
-            var _state = state;
-            var originalState = cloneDeep(store.state);
-            if (storageFirst) {
-                _state = merge(originalState, state);
+            return matchers;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Transforms.prototype.addTransforms = function (config) {
+        var _a, _b, _c, _d;
+        var 
+        /* istanbul ignore next The test dose not need to check*/
+        _e = config.url, 
+        /* istanbul ignore next The test dose not need to check*/
+        url = _e === void 0 ? '/' : _e, transformRequest = config.transformRequest, transformResponse = config.transformResponse;
+        var confirmTransforms = Transforms.confirmTransforms;
+        var matchers = this.matchers;
+        var _f = this._options, first = _f.first, final = _f.final;
+        var finalTransformSet = confirmTransforms(final);
+        var firstTransformSet = confirmTransforms(first);
+        var currentTransformSet = confirmTransforms({
+            request: transformRequest,
+            response: transformResponse,
+        });
+        var newConfig = __assign({}, config, { transformRequest: firstTransformSet.request.concat(currentTransformSet.request), transformResponse: firstTransformSet.response.concat(currentTransformSet.response) });
+        for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
+            var matcher = matchers_1[_i];
+            var test_1 = matcher.test;
+            var methodTest = false;
+            var method = toUpper(matcher.method);
+            if (method === 'ALL' || !method || !config.method) {
+                methodTest = true;
             }
             else {
-                _state = merge(state, originalState);
+                methodTest = toUpper(config.method) === method;
             }
-            if (strict) {
-                store.commit(mutationName, _state);
+            if (test_1.test(url) && methodTest) {
+                var transformSet = confirmTransforms(matcher.transform);
+                (_a = newConfig.transformRequest).push.apply(_a, transformSet.request);
+                (_b = newConfig.transformResponse).push.apply(_b, transformSet.response);
+                break;
             }
-            else {
-                store.replaceState(_state);
-            }
-        };
-        this.restoreFilter = function (context) {
-            var store = _this._store;
-            var localState = {};
-            var cookieState = {};
-            if (filterSaveMethod === 'localStorage') {
-                if (!isClient()) {
-                    return;
-                }
-                localState = JSON.parse(localStorage.getItem(filterSaveKey) || '{}');
-            }
-            else {
-                var cookies = new Cookies(context, isClient());
-                cookieState = cookies.get(filterSaveKey);
-            }
-            mergeState(merge(localState, cookieState));
-        };
-        this.restore = function (context) {
-            var store = _this._store;
-            var cookieState = {};
-            var _a = filters(), cookie = _a.cookie, session = _a.session, local = _a.local;
-            if (cookie) {
-                var cookies = new Cookies(context, isClient());
-                cookieState = storeExceptOrOnly(cookies.get(key), cookie.except, cookie.only);
-            }
-            var sessionState = {};
-            var localState = {};
-            // get client storage data if it is client side
-            if (isClient()) {
-                var sessionData = '{}';
-                var localData = '{}';
-                if (session) {
-                    sessionData = sessionStorage.getItem(key)
-                        || /* istanbul ignore next: tired of writing tests */ '{}';
-                    sessionState = storeExceptOrOnly(JSON.parse(sessionData), session.except, session.only);
-                }
-                if (local) {
-                    localData = localStorage.getItem(key)
-                        || /* istanbul ignore next: tired of writing tests */ '{}';
-                    localState = storeExceptOrOnly(JSON.parse(localData), local.except, local.only);
-                }
-            }
-            mergeState(merge(sessionState, localState, cookieState));
-        };
-        this.saveFilter = function (state, context) {
-            var filterOnly = dynamicFilter ?
-                [dynamicFilter.local, dynamicFilter.cookie, dynamicFilter.session] :
-                undefined;
-            if (filterSaveMethod === 'localStorage') {
-                if (!isClient()) {
-                    return;
-                }
-                localStorage.setItem(filterSaveKey, JSON.stringify(storeExceptOrOnly(state, undefined, filterOnly)));
-            }
-            else {
-                var cookies = new Cookies(context, isClient());
-                cookies.set(filterSaveKey, storeExceptOrOnly(state, undefined, filterOnly), { path: '/' });
-            }
-        };
-        this.save = function (state, context) {
-            var _a = filters(), cookie = _a.cookie, session = _a.session, local = _a.local;
-            var cookies = new Cookies(context, isClient());
-            if (cookie && cookies) {
-                /* istanbul ignore next */
-                var _b = cookie.options, options_1 = _b === void 0 ? {} : _b;
-                cookies.set(key, storeExceptOrOnly(state, cookie.except, cookie.only), __assign({ path: '/' }, options_1));
-            }
-            if (!isClient()) {
-                return;
-            }
-            var sessionStorage = window.sessionStorage, localStorage = window.localStorage;
-            if (session) {
-                sessionStorage.setItem(key, JSON.stringify(storeExceptOrOnly(state, session.except, session.only)));
-            }
-            if (local) {
-                localStorage.setItem(key, JSON.stringify(storeExceptOrOnly(state, local.except, local.only)));
-            }
-        };
-        this.nuxtServerInit = function (actionContext, nuxtContext) {
-            _this.restoreFilter(nuxtContext);
-            if (restore) {
-                _this.restore(nuxtContext);
-            }
-            _this.clear();
-            _this.saveFilter(_this._store.state, nuxtContext);
-            _this.save(_this._store.state, nuxtContext);
-        };
-        this.plugin = function (store) {
-            if (_this._store) {
-                throw new Error('plugin install twice');
-            }
-            _this._store = store;
-            var plugin = function (store) {
-                _this.restoreFilter();
-                // restore state
-                if (restore) {
-                    _this.restore();
-                }
-                _this.clear();
-                _this.saveFilter(store.state);
-                _this.save(store.state);
-                store.subscribe(function (mutation, state) {
-                    _this.clear();
-                    _this.saveFilter(state);
-                    _this.save(state);
-                });
-            };
-            if (isClient() && window.onNuxtReady) {
-                window.onNuxtReady(function () { return (plugin(store)); });
-                return;
-            }
-            if (process.server) {
-                return;
-            }
-            plugin(store);
-        };
-    }
-    return VuexStorage;
+        }
+        (_c = newConfig.transformRequest).push.apply(_c, finalTransformSet.request);
+        (_d = newConfig.transformResponse).push.apply(_d, finalTransformSet.response);
+        return newConfig;
+    };
+    return Transforms;
 }());
-export default VuexStorage;
+export default Transforms;
 //# sourceMappingURL=index.js.map

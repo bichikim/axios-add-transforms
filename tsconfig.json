@@ -19,7 +19,7 @@
       "node_modules/@types",
       "types"
     ],
-    "allowJs": true,
+    "allowJs": false,
     // build environment
     "module": "esnext",
     "target": "esnext",

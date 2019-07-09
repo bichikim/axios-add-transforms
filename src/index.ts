@@ -68,8 +68,30 @@ export default class Transforms {
   }
 
   addTransforms(config: AxiosRequestConfig): AxiosRequestConfig {
-    const {url = '/', transformRequest, transformResponse} = config
+    const {
+      /* istanbul ignore next The test dose not need to check*/
+      url = '/',
+      transformRequest, transformResponse} = config
+    const {confirmTransforms} = Transforms
     const {matchers} = this
+    const {first, final} = this._options
+    const finalTransformSet = confirmTransforms(final)
+    const firstTransformSet = confirmTransforms(first)
+    const currentTransformSet = confirmTransforms({
+      request: transformRequest,
+      response: transformResponse,
+    })
+    const newConfig = {
+      ...config,
+      transformRequest: [
+        ...firstTransformSet.request,
+        ...currentTransformSet.request,
+      ],
+      transformResponse: [
+        ...firstTransformSet.response,
+        ...currentTransformSet.response,
+      ],
+    }
     for(let matcher of matchers) {
       const {test} = matcher
       let methodTest: boolean = false
@@ -77,36 +99,19 @@ export default class Transforms {
       if(method === 'ALL' || !method || !config.method) {
         methodTest = true
       } else {
-        methodTest = config.method === method
+        methodTest = toUpper(config.method) === method
       }
+
       if(test.test(url) && methodTest) {
-        const {confirmTransforms} = Transforms
         const transformSet = confirmTransforms(matcher.transform)
-        const {first, final} = this._options
-        const currentTransformSet = confirmTransforms({
-          request: transformRequest,
-          response: transformResponse,
-        })
-        const finalTransformSet = confirmTransforms(final)
-        const firstTransformSet = confirmTransforms(first)
-        return {
-          ...config,
-          transformRequest: [
-            ...firstTransformSet.request,
-            ...currentTransformSet.request,
-            ...transformSet.request,
-            ...finalTransformSet.request,
-          ],
-          transformResponse: [
-            ...firstTransformSet.response,
-            ...currentTransformSet.response,
-            ...transformSet.response,
-            ...finalTransformSet.response,
-          ],
-        }
+        newConfig.transformRequest.push(...transformSet.request)
+        newConfig.transformResponse.push(...transformSet.response)
+        break
       }
     }
-    return config
+    newConfig.transformRequest.push(...finalTransformSet.request)
+    newConfig.transformResponse.push(...finalTransformSet.response)
+    return newConfig
   }
 
 }
