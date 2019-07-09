@@ -1,5 +1,18 @@
-import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
+import {AxiosInstance, AxiosTransformer, Method} from 'axios'
 import {toUpper} from 'lodash'
+
+interface TransFormResponseData {
+  data: any,
+  headers: any
+}
+
+interface TransFormRequestData {
+  data: any,
+  headers: any,
+  params: any
+}
+
+type Transformer = (data: TransFormRequestData) => TransFormRequestData
 
 export interface TransformSetArray {
   request: AxiosTransformer[]
@@ -7,7 +20,7 @@ export interface TransformSetArray {
 }
 
 export interface TransformSet {
-  request?: AxiosTransformer | AxiosTransformer[]
+  request?: Transformer | Transformer[]
   response?: AxiosTransformer | AxiosTransformer[]
 }
 
@@ -67,83 +80,48 @@ export default class Transforms {
     return matchers
   }
 
-  addTransforms(config: AxiosRequestConfig): AxiosRequestConfig {
-    const {
-      /* istanbul ignore next The test dose not need to check*/
-      url = '/',
-      transformRequest, transformResponse,
-    } = config
-    const {confirmTransforms} = Transforms
-    const {matchers} = this
-    const {first, final} = this._options
-    const finalTransformSet = confirmTransforms(final)
-    const firstTransformSet = confirmTransforms(first)
-    const currentTransformSet = confirmTransforms({
-      request: transformRequest,
-      response: transformResponse,
-    })
-    const newConfig = {
-      ...config,
-      transformRequest: [
-        ...firstTransformSet.request,
-        ...currentTransformSet.request,
-      ],
-      transformResponse: [
-        ...firstTransformSet.response,
-        ...currentTransformSet.response,
-      ],
-    }
-    for(let matcher of matchers) {
-      const {test} = matcher
-      let methodTest: boolean = false
-      const method = toUpper(matcher.method)
-      if(method === 'ALL' || !method || !config.method) {
-        methodTest = true
-      } else {
-        methodTest = toUpper(config.method) === method
-      }
-
-      if(test.test(url) && methodTest) {
-        const transformSet = confirmTransforms(matcher.transform)
-        newConfig.transformRequest.push(...transformSet.request)
-        newConfig.transformResponse.push(...transformSet.response)
-        break
-      }
-    }
-    newConfig.transformRequest.push(...finalTransformSet.request)
-    newConfig.transformResponse.push(...finalTransformSet.response)
-    return newConfig
-  }
-
   addInterceptors(
     axios: AxiosInstance,
-    addExisting: boolean = true,
   ) {
-    axios.interceptors.request.use((config) => {
-      const {confirmTransforms} = Transforms
-      const currentTransformSet = confirmTransforms({
-        request: config.transformRequest,
-        response: config.transformResponse,
-      })
-      const newConfig = this.addTransforms({
-        ...config,
-        transformRequest: [],
-        transformResponse: [],
-      })
-      /* istanbul ignore else*/
-      if(addExisting) {
-        const {transformRequest, transformResponse} = newConfig
-        /* istanbul ignore else*/
-        if(Array.isArray(transformRequest)) {
-          transformRequest.push(...currentTransformSet.request)
+    axios.interceptors.request.use(
+      (config) => {
+        const mather = this._getMatcher(config.url, config.method)
+        if(!mather) {
+          return config
         }
-        /* istanbul ignore else*/
-        if(Array.isArray(transformResponse)) {
-          transformResponse.push(...currentTransformSet.request)
-        }
-      }
-      return newConfig
-    })
+        const transformSet = Transforms.confirmTransforms(mather.transform)
+        const transformedData = transformSet.request.reduce((
+          result: TransFormRequestData,
+          transform: Transformer,
+        ) => {
+          return transform(result)
+        }, {
+          data: config.data,
+          headers: config.headers,
+          params: config.params,
+        })
+        return Object.assign(config, transformedData, {
+          transformResponse: transformSet.response,
+        })
+      },
+    )
     return axios
+  }
+
+  private _getMatcher(url: string = '/', _method?: Method): Matcher | undefined {
+    const {matchers} = this
+    for(let matcher of matchers) {
+      const method = toUpper(_method)
+      const matcherMethod = toUpper(matcher.method)
+      let matchedMethod = false
+      if(matcher.method === 'ALL' || !matcher.method || !_method) {
+        matchedMethod = true
+      } else {
+        matchedMethod = method === matcherMethod
+      }
+      if(matcher.test.test(url) && matchedMethod) {
+        return matcher
+      }
+    }
   }
 }
