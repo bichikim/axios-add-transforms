@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosTransformer, Method} from 'axios'
+import {AxiosInstance, AxiosTransformer, Method, AxiosRequestConfig} from 'axios'
 import {toUpper} from 'lodash'
 
 interface TransFormResponseData {
@@ -6,13 +6,7 @@ interface TransFormResponseData {
   headers: any
 }
 
-interface TransFormRequestData {
-  data: any,
-  headers: any,
-  params: any
-}
-
-type Transformer = (data: TransFormRequestData) => TransFormRequestData
+type Transformer = (data: AxiosRequestConfig) => AxiosRequestConfig
 
 export interface TransformSetArray {
   request: AxiosTransformer[]
@@ -34,6 +28,13 @@ export interface TransformsOptions {
   first?: TransformSet
   final?: TransformSet
   matchers?: Matcher[]
+}
+
+export interface AddInterceptorsOptions {
+  /**
+   * @default 'back'
+   */
+  margeResponse?: 'back' | 'front' | 'none'
 }
 
 export default class Transforms {
@@ -66,6 +67,26 @@ export default class Transforms {
     }
   }
 
+  static mergeArray(a: any, b: any) {
+    let _a: any[]
+    let _b: any[]
+    if(Array.isArray(a)) {
+      _a = a
+    } else if(!a) {
+      _a = []
+    } else {
+      _a = [a]
+    }
+    if(Array.isArray(b)) {
+      _b = b
+    } else if(!b) {
+      _b = []
+    } else {
+      _b = [b]
+    }
+    return [..._a, ..._b]
+  }
+
   private readonly _options: TransformsOptions
 
   constructor(options: TransformsOptions) {
@@ -82,7 +103,9 @@ export default class Transforms {
 
   addInterceptors(
     axios: AxiosInstance,
+    options: AddInterceptorsOptions = {},
   ) {
+    const {margeResponse} = options
     axios.interceptors.request.use(
       (config) => {
         const mather = this._getMatcher(config.url, config.method)
@@ -90,19 +113,28 @@ export default class Transforms {
           return config
         }
         const transformSet = Transforms.confirmTransforms(mather.transform)
-        const transformedData = transformSet.request.reduce((
-          result: TransFormRequestData,
+        const transformedConfig = transformSet.request.reduce((
+          result: AxiosRequestConfig,
           transform: Transformer,
         ) => {
           return transform(result)
-        }, {
-          data: config.data,
-          headers: config.headers,
-          params: config.params,
-        })
-        return Object.assign(config, transformedData, {
-          transformResponse: transformSet.response,
-        })
+        }, {...config})
+        Object.assign(config, transformedConfig)
+        let transformResponse: AxiosTransformer[]
+        switch(margeResponse) {
+          case 'front':
+            transformResponse = Transforms
+            .mergeArray(transformSet.response, config.transformResponse)
+            break
+          case 'back':
+            transformResponse = Transforms
+            .mergeArray(config.transformResponse, transformSet.response)
+            break
+          default:
+            transformResponse = transformSet.response
+        }
+        Object.assign(config, {transformResponse})
+        return config
       },
     )
     return axios

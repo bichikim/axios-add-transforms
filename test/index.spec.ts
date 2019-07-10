@@ -1,14 +1,51 @@
-import axios, {AxiosInstance} from 'axios'
+import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import Transforms, {TransformsOptions} from '../src/index'
+import Transforms, {AddInterceptorsOptions, TransformsOptions} from '../src/index'
 
 describe('lib/transforms', function test() {
-  const newTest = (options: TransformsOptions = {}, _axios?: AxiosInstance ) => {
+  const newTest = (
+    options: TransformsOptions = {},
+    addInterceptorsOptions?: AddInterceptorsOptions,
+  ) => {
     const myAxios = axios.create()
     const mock = new MockAdapter(myAxios)
     const {final = {}, matchers = [], first} = options
     const finalRequest = (final.request || []) as any[]
     const finalResponse = (final.response || []) as any[]
+    const response = {
+      result: {
+        '_id': 1,
+        '_name': 'foo',
+      },
+    }
+
+    const request = {
+      url: '/bizs/',
+      data: {
+        foo: 'foo',
+        bar: 'bar',
+      },
+    }
+
+    const requestParam = {
+      url: '/bizs/',
+      params: {
+        foo: 'foo',
+        bar: 'bar',
+      },
+    }
+
+    const expectData = {
+      '_foo': 'foo',
+      '_bar': 'bar',
+    }
+
+    const expectResponse = {
+      result: {
+        id: 1,
+        name: 'foo',
+      },
+    }
     const transforms = new Transforms({
       first,
       final: {
@@ -38,49 +75,40 @@ describe('lib/transforms', function test() {
             }),
           },
         },
+        {
+          test: /^\/foos\//,
+          method: 'get',
+          transform: {
+            request: ({data, headers, params}) => ({
+              data: data && {
+                '_foo': data.foo,
+                '_bar': data.bar,
+              },
+              headers,
+              params: params && {
+                '_foo': params.foo,
+                '_bar': params.bar,
+              },
+            }),
+            response: ({result: {'_id': id, '_name': name}}) => ({
+              result: {
+                id, name,
+              },
+            }),
+          },
+        },
       ],
     })
-    transforms.addInterceptors(myAxios)
-    return {transforms, mock, myAxios}
+    transforms.addInterceptors(myAxios, addInterceptorsOptions)
+    return {transforms, mock, myAxios, expectData, response, requestParam, request, expectResponse}
   }
 
   describe('addInterceptors', function test() {
     it('should run', async function test() {
-      const {transforms, mock, myAxios} = newTest()
-      const response = {
-        result: {
-          '_id': 1,
-          '_name': 'foo',
-        },
-      }
-
-      const request = {
-        url: '/bizs/',
-        data: {
-          foo: 'foo',
-          bar: 'bar',
-        },
-      }
-
-      const requestParam = {
-        url: '/bizs/',
-        params: {
-          foo: 'foo',
-          bar: 'bar',
-        },
-      }
-
-      const expectData = {
-        '_foo': 'foo',
-        '_bar': 'bar',
-      }
-
-      const expectResponse = {
-        result: {
-          id: 1,
-          name: 'foo',
-        },
-      }
+      const {
+        mock, myAxios, request, expectResponse, requestParam,
+        expectData, response,
+      } = newTest()
 
       // get
       {
@@ -143,62 +171,45 @@ describe('lib/transforms', function test() {
       }
     })
     it('should run with method', async function test() {
-      const myAxios = axios.create()
-      const mock = new MockAdapter(myAxios)
-      const transforms = new Transforms({
-        matchers: [
-          {
-            test: /^\/bizs\//,
-            method: 'get',
-            transform: {
-              request: ({data, headers, params}) => ({
-                data: data && {
-                  '_foo': data.foo,
-                  '_bar': data.bar,
-                },
-                headers,
-                params: params && {
-                  '_foo': params.foo,
-                  '_bar': params.bar,
-                },
-              }),
-              response: ({result: {'_id': id, '_name': name}}) => ({
-                result: {
-                  id, name,
-                },
-              }),
-            },
-          },
-        ],
+      const {
+        mock, myAxios, response, expectResponse, expectData,
+        request,
+      } = newTest()
+
+      mock.onGet('/foos/').reply(200, response)
+      const result = await myAxios({...request, url: '/foos/', method: 'get'})
+      expect(mock.history.get).to.length(1)
+      expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+      expect(result.data).to.deep.equal(expectResponse)
+      mock.resetHistory()
+    })
+    it('should run without matching', async function test() {
+      const {
+        mock, myAxios, response,
+        request,
+      } = newTest({}, {
+        margeResponse: 'back',
       })
-      transforms.addInterceptors(myAxios)
 
-      const data = {
-        foo: 'foo',
-        bar: 'bar',
+      // get
+      {
+        mock.onGet('/users/').reply(200, response)
+        const result = await myAxios({...request, url: '/users/', method: 'get'})
+        expect(mock.history.get).to.length(1)
+        expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(request.data)
+        expect(result.data).to.deep.equal(response)
+        mock.resetHistory()
       }
-      const request = {
-        url: '/bizs/',
-        data,
-      }
+    })
+    it('should run with the back margeResponse options', async function test() {
+      const {
+        mock, myAxios, response, expectData,
+        request, expectResponse,
+      } = newTest({}, {
+        margeResponse: 'back',
+      })
 
-      const response = {
-        result: {
-          '_id': 1,
-          '_name': 'foo',
-        },
-      }
-      const expectData = {
-        '_foo': 'foo',
-        '_bar': 'bar',
-      }
-      const expectResponse = {
-        result: {
-          id: 1,
-          name: 'foo',
-        },
-      }
-
+      // get
       {
         mock.onGet('/bizs/').reply(200, response)
         const result = await myAxios({...request, method: 'get'})
@@ -207,13 +218,22 @@ describe('lib/transforms', function test() {
         expect(result.data).to.deep.equal(expectResponse)
         mock.resetHistory()
       }
-      // no matcher
+    })
+    it('should run with the front margeResponse options', async function test() {
+      const {
+        mock, myAxios, response, expectData,
+        request, expectResponse,
+      } = newTest({}, {
+        margeResponse: 'front',
+      })
+
+      // get
       {
-        mock.onPost('/bizs/').reply(200, response)
-        const result = await myAxios({...request, method: 'post'})
-        expect(mock.history.post).to.length(1)
-        expect(JSON.parse(mock.history.post[0].data)).to.deep.equal(data)
-        expect(result.data).to.deep.equal(response)
+        mock.onGet('/bizs/').reply(200, response)
+        const result = await myAxios({...request, method: 'get'})
+        expect(mock.history.get).to.length(1)
+        expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+        expect(result.data).to.deep.equal(expectResponse)
         mock.resetHistory()
       }
     })
@@ -240,6 +260,24 @@ describe('lib/transforms', function test() {
         })
         expect(result.response).to.be.an('array')
         expect(result.request).to.be.an('array')
+      }
+    })
+  })
+
+  describe('margeArray', function test() {
+    it('should marge any two values as an array', function test() {
+      const {mergeArray} = Transforms
+      {
+        const result = mergeArray(null, null)
+        expect(result).to.deep.equal([])
+      }
+      {
+        const result = mergeArray(['a'], ['b'])
+        expect(result).to.deep.equal(['a', 'b'])
+      }
+      {
+        const result = mergeArray('a', 'b')
+        expect(result).to.deep.equal(['a', 'b'])
       }
     })
   })

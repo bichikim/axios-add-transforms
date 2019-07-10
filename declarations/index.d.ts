@@ -1,10 +1,5 @@
-import { AxiosInstance, AxiosTransformer, Method } from 'axios';
-interface TransFormRequestData {
-    data: any;
-    headers: any;
-    params: any;
-}
-declare type Transformer = (data: TransFormRequestData) => TransFormRequestData;
+import { AxiosInstance, AxiosTransformer, Method, AxiosRequestConfig } from 'axios';
+declare type Transformer = (data: AxiosRequestConfig) => AxiosRequestConfig;
 export interface TransformSetArray {
     request: AxiosTransformer[];
     response: AxiosTransformer[];
@@ -23,12 +18,19 @@ export interface TransformsOptions {
     final?: TransformSet;
     matchers?: Matcher[];
 }
+export interface AddInterceptorsOptions {
+    /**
+     * @default 'back'
+     */
+    margeResponse?: 'back' | 'front' | 'none';
+}
 export default class Transforms {
     static confirmTransforms(transformSet?: TransformSet): TransformSetArray;
+    static mergeArray(a: any, b: any): any[];
     private readonly _options;
     constructor(options: TransformsOptions);
     readonly matchers: Matcher[];
-    addInterceptors(axios: AxiosInstance): AxiosInstance;
+    addInterceptors(axios: AxiosInstance, options?: AddInterceptorsOptions): AxiosInstance;
     private _getMatcher;
 }
 export {};

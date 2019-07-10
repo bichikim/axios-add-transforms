@@ -1,3 +1,14 @@
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 define("index", ["require", "exports", "lodash"], function (require, exports, lodash_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -37,6 +48,29 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
                 response: response,
             };
         };
+        Transforms.mergeArray = function (a, b) {
+            var _a;
+            var _b;
+            if (Array.isArray(a)) {
+                _a = a;
+            }
+            else if (!a) {
+                _a = [];
+            }
+            else {
+                _a = [a];
+            }
+            if (Array.isArray(b)) {
+                _b = b;
+            }
+            else if (!b) {
+                _b = [];
+            }
+            else {
+                _b = [b];
+            }
+            return _a.concat(_b);
+        };
         Object.defineProperty(Transforms.prototype, "matchers", {
             get: function () {
                 var matchers = this._options.matchers;
@@ -48,24 +82,35 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             enumerable: true,
             configurable: true
         });
-        Transforms.prototype.addInterceptors = function (axios) {
+        Transforms.prototype.addInterceptors = function (axios, options) {
             var _this = this;
+            if (options === void 0) { options = {}; }
+            var margeResponse = options.margeResponse;
             axios.interceptors.request.use(function (config) {
                 var mather = _this._getMatcher(config.url, config.method);
                 if (!mather) {
                     return config;
                 }
                 var transformSet = Transforms.confirmTransforms(mather.transform);
-                var transformedData = transformSet.request.reduce(function (result, transform) {
+                var transformedConfig = transformSet.request.reduce(function (result, transform) {
                     return transform(result);
-                }, {
-                    data: config.data,
-                    headers: config.headers,
-                    params: config.params,
-                });
-                return Object.assign(config, transformedData, {
-                    transformResponse: transformSet.response,
-                });
+                }, __assign({}, config));
+                Object.assign(config, transformedConfig);
+                var transformResponse;
+                switch (margeResponse) {
+                    case 'front':
+                        transformResponse = Transforms
+                            .mergeArray(transformSet.response, config.transformResponse);
+                        break;
+                    case 'back':
+                        transformResponse = Transforms
+                            .mergeArray(config.transformResponse, transformSet.response);
+                        break;
+                    default:
+                        transformResponse = transformSet.response;
+                }
+                Object.assign(config, { transformResponse: transformResponse });
+                return config;
             });
             return axios;
         };
