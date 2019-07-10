@@ -243,4 +243,11 @@ describe('lib/transforms', function test() {
       }
     })
   })
+
+  describe('get matchers', function test() {
+    it('should return array', () => {
+      const transforms = new Transforms({})
+      expect(transforms.matchers).to.be.an('array')
+    })
+  })
 })
