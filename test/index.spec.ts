@@ -82,11 +82,23 @@ describe('lib/transforms', function test() {
                 '_bar': params.bar,
               },
             }),
-            response: ({result: {'_id': id, '_name': name}}) => ({
-              result: {
-                id, name,
-              },
-            }),
+            response: (data) => {
+              if(!data) {
+                return data
+              }
+              if(!data.result) {
+                return {
+                  code: data._code,
+                  message: data._message,
+                }
+              }
+              const {result} = data
+              return {
+                result: {
+                  id: result._id, name: result._name,
+                },
+              }
+            },
           },
         },
         {
@@ -291,6 +303,38 @@ describe('lib/transforms', function test() {
         expect(result.response).to.be.an('array')
         expect(result.request).to.be.an('array')
       }
+    })
+  })
+
+  describe('error', function test() {
+    it('should handle', async function test() {
+      const {
+        mock, myAxios,
+        request,
+      } = newTest()
+
+      const accessToken = 'access-token'
+      let error
+
+      const errorData = {
+        _code: 'my-code',
+        _message: 'my-message',
+      }
+
+      mock.onGet('/bizs/').reply(401, {
+        _code: 'my-code',
+        _message: 'my-message',
+      })
+      try {
+        await myAxios({...request, method: 'get', headers: {accessToken}})
+      } catch(e) {
+        error = e
+        const {data} = e.response
+        expect(data.code).to.equal(errorData._code)
+        expect(data.message).to.equal(errorData._message)
+      }
+      expect(error).to.instanceOf(Error)
+      mock.resetHistory()
     })
   })
 
