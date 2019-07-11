@@ -87,11 +87,11 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             if (options === void 0) { options = {}; }
             var margeResponse = options.margeResponse;
             axios.interceptors.request.use(function (config) {
-                var mather = _this._getMatcher(config.url, config.method);
-                if (!mather) {
+                var transform = _this._getTransformSet(config.url, config.method);
+                if (!transform) {
                     return config;
                 }
-                var transformSet = Transforms.confirmTransforms(mather.transform);
+                var transformSet = Transforms.confirmTransforms(transform);
                 var transformedConfig = transformSet.request.reduce(function (result, transform) {
                     return transform(result);
                 }, __assign({}, config));
@@ -114,9 +114,10 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             });
             return axios;
         };
-        Transforms.prototype._getMatcher = function (url, _method) {
+        Transforms.prototype._getTransformSet = function (url, _method) {
             if (url === void 0) { url = '/'; }
             var matchers = this.matchers;
+            var matchedMatchers = [];
             for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
                 var matcher = matchers_1[_i];
                 var method = lodash_1.toUpper(_method);
@@ -129,9 +130,21 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
                     matchedMethod = method === matcherMethod;
                 }
                 if (matcher.test.test(url) && matchedMethod) {
-                    return matcher;
+                    matchedMatchers.push(matcher);
                 }
             }
+            if (matchedMatchers.length < 1) {
+                return;
+            }
+            return matchedMatchers.reduce(function (result, value) {
+                var _c = value.transform, transform = _c === void 0 ? {} : _c;
+                result.request = Transforms.mergeArray(result.request, transform.request);
+                result.response = Transforms.mergeArray(result.response, transform.response);
+                return result;
+            }, {
+                request: [],
+                response: [],
+            });
         };
         return Transforms;
     }());

@@ -55,7 +55,11 @@ describe('lib/transforms', function test() {
       matchers: [
         ...matchers,
         {
-          test: /^\.*/,
+          test: /^\/.{4}\//,
+          // Test empty transform
+        } as any,
+        {
+          test: /^\/.{4}\//,
           transform: {
             request: (payload) => {
               payload.headers.token = payload.headers.accessToken
@@ -204,12 +208,17 @@ describe('lib/transforms', function test() {
         margeResponse: 'back',
       })
 
+      const accessToken = 'access-token'
+
       // get
       {
         mock.onGet('/users/').reply(200, response)
-        const result = await myAxios({...request, url: '/users/', method: 'get'})
+        const result = await myAxios({
+          ...request, url: '/users/', method: 'get', headers: {accessToken},
+        })
         expect(mock.history.get).to.length(1)
         expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(request.data)
+        expect(mock.history.get[0].headers.accessToken).to.equal(accessToken)
         expect(result.data).to.deep.equal(response)
         mock.resetHistory()
       }
@@ -270,6 +279,14 @@ describe('lib/transforms', function test() {
       {
         const result = confirmTransforms({
           request: [],
+        })
+        expect(result.response).to.be.an('array')
+        expect(result.request).to.be.an('array')
+      }
+      {
+        const result = confirmTransforms({
+          request: (payload) => (payload),
+          response: (payload) => (payload),
         })
         expect(result.response).to.be.an('array')
         expect(result.request).to.be.an('array')

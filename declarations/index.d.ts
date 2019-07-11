@@ -1,4 +1,4 @@
-import { AxiosInstance, AxiosTransformer, Method, AxiosRequestConfig } from 'axios';
+import { AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method } from 'axios';
 declare type Transformer = (data: AxiosRequestConfig) => AxiosRequestConfig;
 export interface TransformSetArray {
     request: AxiosTransformer[];
@@ -31,6 +31,6 @@ export default class Transforms {
     constructor(options: TransformsOptions);
     readonly matchers: Matcher[];
     addInterceptors(axios: AxiosInstance, options?: AddInterceptorsOptions): AxiosInstance;
-    private _getMatcher;
+    private _getTransformSet;
 }
 export {};
