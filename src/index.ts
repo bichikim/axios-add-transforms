@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosTransformer, Method, AxiosRequestConfig} from 'axios'
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
 import {toUpper} from 'lodash'
 
 interface TransFormResponseData {
@@ -108,11 +108,11 @@ export default class Transforms {
     const {margeResponse} = options
     axios.interceptors.request.use(
       (config) => {
-        const mather = this._getMatcher(config.url, config.method)
-        if(!mather) {
+        const transform = this._getTransformSet(config.url, config.method)
+        if(!transform) {
           return config
         }
-        const transformSet = Transforms.confirmTransforms(mather.transform)
+        const transformSet = Transforms.confirmTransforms(transform)
         const transformedConfig = transformSet.request.reduce((
           result: AxiosRequestConfig,
           transform: Transformer,
@@ -140,8 +140,9 @@ export default class Transforms {
     return axios
   }
 
-  private _getMatcher(url: string = '/', _method?: Method): Matcher | undefined {
+  private _getTransformSet(url: string = '/', _method?: Method): TransformSet | undefined {
     const {matchers} = this
+    const matchedMatchers: Matcher[] = []
     for(let matcher of matchers) {
       const method = toUpper(_method)
       const matcherMethod = toUpper(matcher.method)
@@ -152,8 +153,22 @@ export default class Transforms {
         matchedMethod = method === matcherMethod
       }
       if(matcher.test.test(url) && matchedMethod) {
-        return matcher
+        matchedMatchers.push(matcher)
       }
     }
+
+    if(matchedMatchers.length < 1) {
+      return
+    }
+
+    return matchedMatchers.reduce((result: TransformSet, value) => {
+      const {transform = {}} = value
+      result.request = Transforms.mergeArray(result.request, transform.request)
+      result.response = Transforms.mergeArray(result.response, transform.response)
+      return result
+    }, {
+      request: [],
+      response: [],
+    })
   }
 }

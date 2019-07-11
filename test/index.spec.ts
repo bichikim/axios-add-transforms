@@ -55,6 +55,16 @@ describe('lib/transforms', function test() {
       matchers: [
         ...matchers,
         {
+          test: /^\.*/,
+          transform: {
+            request: (payload) => {
+              payload.headers.token = payload.headers.accessToken
+              delete payload.headers.accessToken
+              return payload
+            },
+          },
+        },
+        {
           test: /^\/bizs\//,
           transform: {
             request: ({data, headers, params}) => ({
@@ -110,12 +120,15 @@ describe('lib/transforms', function test() {
         expectData, response,
       } = newTest()
 
+      const accessToken = 'access-token'
+
       // get
       {
         mock.onGet('/bizs/').reply(200, response)
-        const result = await myAxios({...request, method: 'get'})
+        const result = await myAxios({...request, method: 'get', headers: {accessToken}})
         expect(mock.history.get).to.length(1)
         expect(JSON.parse(mock.history.get[0].data)).to.deep.equal(expectData)
+        expect(mock.history.get[0].headers.token).to.equal(accessToken)
         expect(result.data).to.deep.equal(expectResponse)
         mock.resetHistory()
       }
