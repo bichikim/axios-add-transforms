@@ -93,6 +93,14 @@ export default class Transforms {
     this._options = options
   }
 
+  get first() {
+    return this._options.first
+  }
+
+  get final() {
+    return this._options.final
+  }
+
   get matchers(): Matcher[] {
     const {matchers} = this._options
     if(!matchers) {
@@ -141,7 +149,7 @@ export default class Transforms {
   }
 
   private _getTransformSet(url: string = '/', _method?: Method): TransformSet | undefined {
-    const {matchers} = this
+    const {matchers, first, final} = this
     const matchedMatchers: Matcher[] = []
     for(let matcher of matchers) {
       const method = toUpper(_method)
@@ -161,14 +169,29 @@ export default class Transforms {
       return
     }
 
-    return matchedMatchers.reduce((result: TransformSet, value) => {
+    let request: Transformer[] = []
+    let response: AxiosTransformer[] = []
+    if(first) {
+      request = Transforms.mergeArray(request, first.request)
+      response = Transforms.mergeArray(response, first.response)
+    }
+
+
+    const transformSet = matchedMatchers.reduce((result: TransformSet, value) => {
       const {transform = {}} = value
       result.request = Transforms.mergeArray(result.request, transform.request)
       result.response = Transforms.mergeArray(result.response, transform.response)
       return result
     }, {
-      request: [],
-      response: [],
+      request,
+      response,
     })
+    if(final) {
+      return {
+        request: Transforms.mergeArray(transformSet.request, final.request),
+        response: Transforms.mergeArray(transformSet.response, final.response),
+      }
+    }
+    return transformSet
   }
 }

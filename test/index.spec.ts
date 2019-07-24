@@ -9,9 +9,7 @@ describe('lib/transforms', function test() {
   ) => {
     const myAxios = axios.create()
     const mock = new MockAdapter(myAxios)
-    const {final = {}, matchers = [], first} = options
-    const finalRequest = (final.request || []) as any[]
-    const finalResponse = (final.response || []) as any[]
+    const {final, matchers = [], first} = options
     const response = {
       result: {
         '_id': 1,
@@ -48,10 +46,7 @@ describe('lib/transforms', function test() {
     }
     const transforms = new Transforms({
       first,
-      final: {
-        request: finalRequest,
-        response: finalResponse,
-      },
+      final,
       matchers: [
         ...matchers,
         {
@@ -93,11 +88,14 @@ describe('lib/transforms', function test() {
                 }
               }
               const {result} = data
-              return {
+              const {_id, _name, ...etc} = result
+              const newResult: any =  {
                 result: {
-                  id: result._id, name: result._name,
+                  ...etc,
+                  id: _id, name: _name,
                 },
               }
+              return newResult
             },
           },
         },
@@ -116,8 +114,9 @@ describe('lib/transforms', function test() {
                 '_bar': params.bar,
               },
             }),
-            response: ({result: {'_id': id, '_name': name}}) => ({
+            response: ({result: {'_id': id, '_name': name, ...etc}}) => ({
               result: {
+                ...etc,
                 id, name,
               },
             }),
@@ -199,6 +198,36 @@ describe('lib/transforms', function test() {
         mock.resetHistory()
       }
     })
+    it('should run with first', async function test() {
+      const {
+        mock, myAxios, request, response,
+      } = newTest({first: {
+          response: (data) => {
+            data.result.test = true
+            return data
+          },
+        }})
+      const accessToken = 'access-token'
+      mock.onGet('/bizs/').reply(200, response)
+      const result = await myAxios({...request, method: 'get', headers: {accessToken}})
+      expect(result.data.result.test).to.equal(true)
+    })
+
+    it('should run with final', async function test() {
+      const {
+        mock, myAxios, request, response,
+      } = newTest({final: {
+          response: (data) => {
+            data.result.test = true
+            return data
+          },
+        }})
+      const accessToken = 'access-token'
+      mock.onGet('/bizs/').reply(200, response)
+      const result = await myAxios({...request, method: 'get', headers: {accessToken}})
+      expect(result.data.result.test).to.equal(true)
+    })
+
     it('should run with method', async function test() {
       const {
         mock, myAxios, response, expectResponse, expectData,

@@ -71,6 +71,20 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             }
             return _a.concat(_b);
         };
+        Object.defineProperty(Transforms.prototype, "first", {
+            get: function () {
+                return this._options.first;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Transforms.prototype, "final", {
+            get: function () {
+                return this._options.final;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Transforms.prototype, "matchers", {
             get: function () {
                 var matchers = this._options.matchers;
@@ -116,7 +130,7 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
         };
         Transforms.prototype._getTransformSet = function (url, _method) {
             if (url === void 0) { url = '/'; }
-            var matchers = this.matchers;
+            var _c = this, matchers = _c.matchers, first = _c.first, final = _c.final;
             var matchedMatchers = [];
             for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
                 var matcher = matchers_1[_i];
@@ -136,15 +150,28 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             if (matchedMatchers.length < 1) {
                 return;
             }
-            return matchedMatchers.reduce(function (result, value) {
+            var request = [];
+            var response = [];
+            if (first) {
+                request = Transforms.mergeArray(request, first.request);
+                response = Transforms.mergeArray(response, first.response);
+            }
+            var transformSet = matchedMatchers.reduce(function (result, value) {
                 var _c = value.transform, transform = _c === void 0 ? {} : _c;
                 result.request = Transforms.mergeArray(result.request, transform.request);
                 result.response = Transforms.mergeArray(result.response, transform.response);
                 return result;
             }, {
-                request: [],
-                response: [],
+                request: request,
+                response: response,
             });
+            if (final) {
+                return {
+                    request: Transforms.mergeArray(transformSet.request, final.request),
+                    response: Transforms.mergeArray(transformSet.response, final.response),
+                };
+            }
+            return transformSet;
         };
         return Transforms;
     }());

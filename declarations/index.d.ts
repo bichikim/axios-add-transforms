@@ -29,6 +29,8 @@ export default class Transforms {
     static mergeArray(a: any, b: any): any[];
     private readonly _options;
     constructor(options: TransformsOptions);
+    readonly first: TransformSet | undefined;
+    readonly final: TransformSet | undefined;
     readonly matchers: Matcher[];
     addInterceptors(axios: AxiosInstance, options?: AddInterceptorsOptions): AxiosInstance;
     private _getTransformSet;
