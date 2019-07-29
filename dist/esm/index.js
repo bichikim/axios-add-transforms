@@ -83,6 +83,17 @@ var Transforms = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Transforms.prototype, "context", {
+        get: function () {
+            var context = this._options.context;
+            if (context) {
+                return context();
+            }
+            return undefined;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Transforms.prototype, "matchers", {
         get: function () {
             var matchers = this._options.matchers;
@@ -94,21 +105,29 @@ var Transforms = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    /**
+     * Add Interceptors for response & request transforms
+     */
     Transforms.prototype.addInterceptors = function (axios, options) {
         var _this = this;
         if (options === void 0) { options = {}; }
         var margeResponse = options.margeResponse;
+        var _mutateAxiosTransformer = this._mutateAxiosTransformer;
         axios.interceptors.request.use(function (config) {
             var transform = _this._getTransformSet(config.url, config.method);
+            // no transform skip running
             if (!transform) {
                 return config;
             }
             var transformSet = Transforms.confirmTransforms(transform);
+            // transform config by matchers
             var transformedConfig = transformSet.request.reduce(function (result, transform) {
-                return transform(result);
+                return transform(result, _this.context);
             }, __assign({}, config));
             Object.assign(config, transformedConfig);
+            // add response transforms
             var transformResponse;
+            // how to merge response transforms
             switch (margeResponse) {
                 case 'front':
                     transformResponse = Transforms
@@ -121,11 +140,25 @@ var Transforms = /** @class */ (function () {
                 default:
                     transformResponse = transformSet.response;
             }
-            Object.assign(config, { transformResponse: transformResponse });
+            // update transformResponse
+            Object.assign(config, { transformResponse: _mutateAxiosTransformer.call(_this, transformResponse) });
             return config;
         });
+        // for chaining use
         return axios;
     };
+    /**
+     * Make transformResponse can use context
+     */
+    Transforms.prototype._mutateAxiosTransformer = function (transformResponse) {
+        var _this = this;
+        return transformResponse.map(function (transform) {
+            return function (data) { return (transform(data, _this.context)); };
+        });
+    };
+    /**
+     * Find matched transforms
+     */
     Transforms.prototype._getTransformSet = function (url, _method) {
         if (url === void 0) { url = '/'; }
         var _c = this, matchers = _c.matchers, first = _c.first, final = _c.final;

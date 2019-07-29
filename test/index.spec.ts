@@ -47,6 +47,7 @@ describe('lib/transforms', function test() {
     const transforms = new Transforms({
       first,
       final,
+      context: () => ('context'),
       matchers: [
         ...matchers,
         {
@@ -89,14 +90,31 @@ describe('lib/transforms', function test() {
               }
               const {result} = data
               const {_id, _name, ...etc} = result
-              const newResult: any =  {
+              const newData: any =  {
                 result: {
                   ...etc,
                   id: _id, name: _name,
                 },
               }
-              return newResult
+              return newData
             },
+          },
+        },
+        {
+          test: /^\/context\/?/,
+          method: 'get',
+          transform: {
+            request: (config, context) => ({
+              ...config,
+              data: {
+                ...config.data,
+                contextRequest: context,
+              },
+            }),
+            response: (data, context) => ({
+              ...data,
+              contextResponse: context,
+            }),
           },
         },
         {
@@ -137,7 +155,6 @@ describe('lib/transforms', function test() {
 
       const accessToken = 'access-token'
 
-      // get
       {
         mock.onGet('/bizs/').reply(200, response)
         const result = await myAxios({...request, method: 'get', headers: {accessToken}})
@@ -211,6 +228,44 @@ describe('lib/transforms', function test() {
       mock.onGet('/bizs/').reply(200, response)
       const result = await myAxios({...request, method: 'get', headers: {accessToken}})
       expect(result.data.result.test).to.equal(true)
+    })
+
+    it('should run with context', async function test() {
+      const {mock, myAxios} = newTest()
+      mock.onGet('/context/').reply((config) => {
+        const data = JSON.parse(config.data)
+        return [200, {
+          ...data,
+        }]
+      })
+      const result = await myAxios({url: '/context/', method: 'get'})
+      expect(result.data.contextRequest).to.equal('context')
+      expect(result.data.contextResponse).to.equal('context')
+
+      const contextElseTest = axios.create()
+      const transforms = new Transforms({
+        matchers: [
+          {
+            test: /^\/test\/?/,
+            transform: {
+              response: (data) => (data),
+            },
+          },
+        ],
+      })
+      transforms.addInterceptors(contextElseTest)
+      const resultData = {
+        foo: 'foo',
+      }
+      const mock2 = new MockAdapter(contextElseTest)
+      mock2.onGet('/test/').reply(() => ([200, resultData]))
+      const result2 = await contextElseTest({
+        url: '/test/',
+        data: {
+          foo: 'foo',
+        },
+      })
+      expect(result2.data).to.deep.equal(resultData)
     })
 
     it('should run with final', async function test() {

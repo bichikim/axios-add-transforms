@@ -1,21 +1,19 @@
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
 import {toUpper} from 'lodash'
 
-interface TransFormResponseData {
-  data: any,
-  headers: any
-}
-
-type Transformer = (data: AxiosRequestConfig) => AxiosRequestConfig
+type Transformer<C = any> =
+  (payload: AxiosRequestConfig, context?: C) => AxiosRequestConfig
+type TransformerResponse<C = any> =
+  (data: any, context?: C) => any
 
 export interface TransformSetArray {
   request: AxiosTransformer[]
   response: AxiosTransformer[]
 }
 
-export interface TransformSet {
-  request?: Transformer | Transformer[]
-  response?: AxiosTransformer | AxiosTransformer[]
+export interface TransformSet<C = any> {
+  request?: Transformer<C> | Array<Transformer<C>>
+  response?: TransformerResponse<C> | Array<TransformerResponse<C>>
 }
 
 export interface Matcher {
@@ -24,10 +22,11 @@ export interface Matcher {
   transform: TransformSet
 }
 
-export interface TransformsOptions {
+export interface TransformsOptions<C = any> {
   first?: TransformSet
   final?: TransformSet
   matchers?: Matcher[]
+  context?: () => C
 }
 
 export interface AddInterceptorsOptions {
@@ -37,7 +36,7 @@ export interface AddInterceptorsOptions {
   margeResponse?: 'back' | 'front' | 'none'
 }
 
-export default class Transforms {
+export default class Transforms<C = any> {
   static confirmTransforms(transformSet?: TransformSet): TransformSetArray {
     if(!transformSet) {
       return {
@@ -101,6 +100,14 @@ export default class Transforms {
     return this._options.final
   }
 
+  get context(): C | undefined {
+    const {context} = this._options
+    if(context) {
+      return context()
+    }
+    return undefined
+  }
+
   get matchers(): Matcher[] {
     const {matchers} = this._options
     if(!matchers) {
@@ -109,26 +116,35 @@ export default class Transforms {
     return matchers
   }
 
+  /**
+   * Add Interceptors for response & request transforms
+   */
   addInterceptors(
     axios: AxiosInstance,
     options: AddInterceptorsOptions = {},
   ) {
     const {margeResponse} = options
+    const {_mutateAxiosTransformer} = this
     axios.interceptors.request.use(
       (config) => {
         const transform = this._getTransformSet(config.url, config.method)
-        if(!transform) {
-          return config
-        }
+        // no transform skip running
+        if(!transform) {return config}
         const transformSet = Transforms.confirmTransforms(transform)
+
+        // transform config by matchers
         const transformedConfig = transformSet.request.reduce((
           result: AxiosRequestConfig,
           transform: Transformer,
         ) => {
-          return transform(result)
+          return transform(result, this.context)
         }, {...config})
+
         Object.assign(config, transformedConfig)
+        // add response transforms
         let transformResponse: AxiosTransformer[]
+
+        // how to merge response transforms
         switch(margeResponse) {
           case 'front':
             transformResponse = Transforms
@@ -141,14 +157,38 @@ export default class Transforms {
           default:
             transformResponse = transformSet.response
         }
-        Object.assign(config, {transformResponse})
+
+        // update transformResponse
+        Object.assign(
+          config,
+          {transformResponse: _mutateAxiosTransformer.call(this, transformResponse)},
+          )
         return config
       },
     )
+
+    // for chaining use
     return axios
   }
 
-  private _getTransformSet(url: string = '/', _method?: Method): TransformSet | undefined {
+  /**
+   * Make transformResponse can use context
+   */
+  private _mutateAxiosTransformer(
+    transformResponse: Array<TransformerResponse<C>>,
+    ): AxiosTransformer[] {
+    return transformResponse.map((transform) => {
+      return (data) => (transform(data, this.context))
+    })
+  }
+
+  /**
+   * Find matched transforms
+   */
+  private _getTransformSet(
+    url: string = '/',
+    _method?: Method,
+    ): TransformSet<C> | undefined {
     const {matchers, first, final} = this
     const matchedMatchers: Matcher[] = []
     for(let matcher of matchers) {
@@ -169,15 +209,14 @@ export default class Transforms {
       return
     }
 
-    let request: Transformer[] = []
+    let request: Array<Transformer<C>> = []
     let response: AxiosTransformer[] = []
     if(first) {
       request = Transforms.mergeArray(request, first.request)
       response = Transforms.mergeArray(response, first.response)
     }
 
-
-    const transformSet = matchedMatchers.reduce((result: TransformSet, value) => {
+    const transformSet = matchedMatchers.reduce((result: TransformSet<C>, value) => {
       const {transform = {}} = value
       result.request = Transforms.mergeArray(result.request, transform.request)
       result.response = Transforms.mergeArray(result.response, transform.response)
