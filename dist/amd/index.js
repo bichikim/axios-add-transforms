@@ -118,9 +118,6 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             axios.interceptors.request.use(function (config) {
                 var transform = _this._getTransformSet(config.url, config.method);
                 // no transform skip running
-                if (!transform) {
-                    return config;
-                }
                 var transformSet = Transforms.confirmTransforms(transform);
                 // transform config by matchers
                 var transformedConfig = transformSet.request.reduce(function (result, transform) {
@@ -163,7 +160,7 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
          */
         Transforms.prototype._getTransformSet = function (url, _method) {
             if (url === void 0) { url = '/'; }
-            var _c = this, matchers = _c.matchers, first = _c.first, final = _c.final;
+            var _c = this, matchers = _c.matchers, final = _c.final, first = _c.first;
             var matchedMatchers = [];
             for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
                 var matcher = matchers_1[_i];
@@ -180,26 +177,26 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
                     matchedMatchers.push(matcher);
                 }
             }
-            if (matchedMatchers.length < 1) {
-                return;
+            var transformSet = {};
+            if (matchedMatchers.length > 0) {
+                transformSet = matchedMatchers.reduce(function (result, value) {
+                    var _c = value.transform, transform = _c === void 0 ? {} : _c;
+                    result.request = Transforms.mergeArray(result.request, transform.request);
+                    result.response = Transforms.mergeArray(result.response, transform.response);
+                    return result;
+                }, {
+                    request: [],
+                    response: [],
+                });
             }
-            var request = [];
-            var response = [];
             if (first) {
-                request = Transforms.mergeArray(request, first.request);
-                response = Transforms.mergeArray(response, first.response);
+                transformSet = {
+                    request: Transforms.mergeArray(first.request, transformSet.request),
+                    response: Transforms.mergeArray(first.response, transformSet.response),
+                };
             }
-            var transformSet = matchedMatchers.reduce(function (result, value) {
-                var _c = value.transform, transform = _c === void 0 ? {} : _c;
-                result.request = Transforms.mergeArray(result.request, transform.request);
-                result.response = Transforms.mergeArray(result.response, transform.response);
-                return result;
-            }, {
-                request: request,
-                response: response,
-            });
             if (final) {
-                return {
+                transformSet = {
                     request: Transforms.mergeArray(transformSet.request, final.request),
                     response: Transforms.mergeArray(transformSet.response, final.response),
                 };

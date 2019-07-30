@@ -31,8 +31,8 @@ export default class Transforms<C = any> {
     static mergeArray(a: any, b: any): any[];
     private readonly _options;
     constructor(options: TransformsOptions);
-    readonly first: TransformSet<any> | undefined;
-    readonly final: TransformSet<any> | undefined;
+    readonly first: TransformSet<C> | undefined;
+    readonly final: TransformSet<C> | undefined;
     readonly context: C | undefined;
     readonly matchers: Matcher[];
     /**
