@@ -16,16 +16,16 @@ export interface TransformSet<C = any> {
   response?: TransformerResponse<C> | Array<TransformerResponse<C>>
 }
 
-export interface Matcher {
+export interface Matcher<C = any> {
   test: RegExp
   method?: 'all' | 'ALL' | Method
-  transform: TransformSet
+  transform: TransformSet<C>
 }
 
 export interface TransformsOptions<C = any> {
-  first?: TransformSet
-  final?: TransformSet
-  matchers?: Matcher[]
+  first?: TransformSet<C>
+  final?: TransformSet<C>
+  matchers?: Array<Matcher<C>>
   context?: () => C
 }
 
