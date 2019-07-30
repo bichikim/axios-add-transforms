@@ -90,7 +90,7 @@ describe('lib/transforms', function test() {
               }
               const {result} = data
               const {_id, _name, ...etc} = result
-              const newData: any =  {
+              const newData: any = {
                 result: {
                   ...etc,
                   id: _id, name: _name,
@@ -216,18 +216,26 @@ describe('lib/transforms', function test() {
       }
     })
     it('should run with first', async function test() {
-      const {
-        mock, myAxios, request, response,
-      } = newTest({first: {
+      const {mock, myAxios} = newTest({
+        first: {
+          request: (payload) => {
+            payload.data.first = true
+            return payload
+          },
           response: (data) => {
-            data.result.test = true
+            data.test = true
             return data
           },
-        }})
+        },
+      })
       const accessToken = 'access-token'
-      mock.onGet('/bizs/').reply(200, response)
-      const result = await myAxios({...request, method: 'get', headers: {accessToken}})
-      expect(result.data.result.test).to.equal(true)
+      mock.onPost('/any/').reply((config) => {
+        return [200, JSON.parse(config.data)]
+      })
+      const result = await myAxios({
+        url: '/any/', data: {}, method: 'post', headers: {accessToken}})
+      expect(result.data.test).to.equal(true)
+      expect(result.data.first).to.equal(true)
     })
 
     it('should run with context', async function test() {
@@ -238,9 +246,11 @@ describe('lib/transforms', function test() {
           ...data,
         }]
       })
+
       const result = await myAxios({url: '/context/', method: 'get'})
       expect(result.data.contextRequest).to.equal('context')
       expect(result.data.contextResponse).to.equal('context')
+
 
       const contextElseTest = axios.create()
       const transforms = new Transforms({
@@ -271,12 +281,14 @@ describe('lib/transforms', function test() {
     it('should run with final', async function test() {
       const {
         mock, myAxios, request, response,
-      } = newTest({final: {
+      } = newTest({
+        final: {
           response: (data) => {
             data.result.test = true
             return data
           },
-        }})
+        },
+      })
       const accessToken = 'access-token'
       mock.onGet('/bizs/').reply(200, response)
       const result = await myAxios({...request, method: 'get', headers: {accessToken}})

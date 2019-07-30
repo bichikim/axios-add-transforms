@@ -92,11 +92,11 @@ export default class Transforms<C = any> {
     this._options = options
   }
 
-  get first() {
+  get first(): TransformSet<C> | undefined {
     return this._options.first
   }
 
-  get final() {
+  get final(): TransformSet<C> | undefined {
     return this._options.final
   }
 
@@ -129,7 +129,6 @@ export default class Transforms<C = any> {
       (config) => {
         const transform = this._getTransformSet(config.url, config.method)
         // no transform skip running
-        if(!transform) {return config}
         const transformSet = Transforms.confirmTransforms(transform)
 
         // transform config by matchers
@@ -188,8 +187,8 @@ export default class Transforms<C = any> {
   private _getTransformSet(
     url: string = '/',
     _method?: Method,
-    ): TransformSet<C> | undefined {
-    const {matchers, first, final} = this
+    ): TransformSet<C> {
+    const {matchers, final, first} = this
     const matchedMatchers: Matcher[] = []
     for(let matcher of matchers) {
       const method = toUpper(_method)
@@ -205,32 +204,35 @@ export default class Transforms<C = any> {
       }
     }
 
-    if(matchedMatchers.length < 1) {
-      return
+    let transformSet: TransformSet<C> = {}
+
+    if(matchedMatchers.length > 0) {
+      transformSet = matchedMatchers.reduce((result: TransformSet<C>, value) => {
+        const {transform = {}} = value
+        result.request = Transforms.mergeArray(result.request, transform.request)
+        result.response = Transforms.mergeArray(result.response, transform.response)
+        return result
+      }, {
+        request: [],
+        response: [],
+      })
     }
 
-    let request: Array<Transformer<C>> = []
-    let response: AxiosTransformer[] = []
+
     if(first) {
-      request = Transforms.mergeArray(request, first.request)
-      response = Transforms.mergeArray(response, first.response)
+      transformSet = {
+        request: Transforms.mergeArray(first.request, transformSet.request),
+        response: Transforms.mergeArray(first.response, transformSet.response),
+      }
     }
 
-    const transformSet = matchedMatchers.reduce((result: TransformSet<C>, value) => {
-      const {transform = {}} = value
-      result.request = Transforms.mergeArray(result.request, transform.request)
-      result.response = Transforms.mergeArray(result.response, transform.response)
-      return result
-    }, {
-      request,
-      response,
-    })
     if(final) {
-      return {
+      transformSet = {
         request: Transforms.mergeArray(transformSet.request, final.request),
         response: Transforms.mergeArray(transformSet.response, final.response),
       }
     }
+
     return transformSet
   }
 }
