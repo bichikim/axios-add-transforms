@@ -13,8 +13,8 @@
     "doc": "typedoc -out ./docs ./src --media ./media",
     "test": "npm run test:unit",
     "lint": "eslint \"src/\"",
-    "test:unit": "karma start config/karma.config.js --single-run",
-    "test:watch": "karma start config/karma.config.js --browsers=ChromeHeadlessWithoutSecurity --auto-watch",
+    "test:unit": "karma start config/karma.config.js --browsers=ChromeHeadless --single-run",
+    "test:watch": "karma start config/karma.config.js --browsers=ChromeHeadless --auto-watch",
     "preversion": "npm run test && npm run build && npm run build:esm"
   },
   "files": [
@@ -24,7 +24,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bichikim/vuex-storage.git"
+    "url": "git+https://github.com/bichikim/axios-add-transforms.git"
   },
   "keywords": [
     "axios"
