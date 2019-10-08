@@ -9,11 +9,19 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 define("index", ["require", "exports", "lodash"], function (require, exports, lodash_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Transforms = /** @class */ (function () {
         function Transforms(options) {
+            if (options === void 0) { options = {}; }
             this._options = options;
         }
         Transforms.confirmTransforms = function (transformSet) {
@@ -69,7 +77,7 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
             else {
                 _b = [b];
             }
-            return _a.concat(_b);
+            return __spreadArrays(_a, _b);
         };
         Object.defineProperty(Transforms.prototype, "first", {
             get: function () {
@@ -87,11 +95,8 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
         });
         Object.defineProperty(Transforms.prototype, "context", {
             get: function () {
-                var context = this._options.context;
-                if (context) {
-                    return context();
-                }
-                return undefined;
+                var _c = this._options.context, context = _c === void 0 ? function () { return ({}); } : _c;
+                return context();
             },
             enumerable: true,
             configurable: true
@@ -150,9 +155,9 @@ define("index", ["require", "exports", "lodash"], function (require, exports, lo
          * Make transformResponse can use context
          */
         Transforms.prototype._mutateAxiosTransformer = function (transformResponse) {
-            var _this = this;
+            var context = this.context;
             return transformResponse.map(function (transform) {
-                return function (data) { return (transform(data, _this.context)); };
+                return function (data) { return (transform(data, context)); };
             });
         };
         /**

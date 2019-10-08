@@ -3,6 +3,7 @@
  * @author Bichi Kim <bichi@live.co.kr>
  */
 require('./ts-register')
+process.env.NODE_ENV = 'test'
 const webpack = require('./webpack.test.config').default
 const {join} = require('path')
 module.exports = function (config) {

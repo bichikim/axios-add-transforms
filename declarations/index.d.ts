@@ -1,6 +1,6 @@
 import { AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method } from 'axios';
-declare type Transformer<C = any> = (payload: AxiosRequestConfig, context?: C) => AxiosRequestConfig;
-declare type TransformerResponse<C = any> = (data: any, context?: C) => any;
+export declare type Transformer<C = any> = (payload: AxiosRequestConfig, context: C) => AxiosRequestConfig;
+export declare type TransformerResponse<C = any> = (data: any, context: C) => any;
 export interface TransformSetArray {
     request: AxiosTransformer[];
     response: AxiosTransformer[];
@@ -30,11 +30,11 @@ export default class Transforms<C = any> {
     static confirmTransforms(transformSet?: TransformSet): TransformSetArray;
     static mergeArray(a: any, b: any): any[];
     private readonly _options;
-    constructor(options: TransformsOptions);
     readonly first: TransformSet<C> | undefined;
     readonly final: TransformSet<C> | undefined;
-    readonly context: C | undefined;
+    readonly context: C;
     readonly matchers: Matcher[];
+    constructor(options?: TransformsOptions);
     /**
      * Add Interceptors for response & request transforms
      */
@@ -48,4 +48,3 @@ export default class Transforms<C = any> {
      */
     private _getTransformSet;
 }
-export {};
