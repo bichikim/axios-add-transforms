@@ -3,7 +3,7 @@
     "tslint:recommended"
   ],
   "jsRules": true,
-  "defaultSeverity": "warning",
+  "defaultSeverity": "error",
   "rules": {
     "class-name": true,
     "curly": true,
@@ -15,7 +15,6 @@
     "no-bitwise": true,
     "no-console": [true,
       "debug",
-      "info",
       "time",
       "timeEnd",
       "trace"
@@ -48,6 +47,23 @@
     "one-line": [true],
     "array-type": [true, "array-simple"],
     "member-access": false,
+    "member-ordering": [true,
+      {
+        "order": [
+          "public-static-field",
+          "private-static-field",
+          "public-static-method",
+          "private-static-method",
+          "public-instance-field",
+          "protected-instance-field",
+          "private-instance-field",
+          "constructor",
+          "public-instance-method",
+          "protected-instance-method",
+          "private-instance-method"
+        ]
+      }
+    ],
     "one-variable-per-declaration": false,
     "whitespace": [true,
       "check-decl",

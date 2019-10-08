@@ -1,6 +1,6 @@
+import Transforms, {AddInterceptorsOptions, TransformsOptions} from '@/index'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import Transforms, {AddInterceptorsOptions, TransformsOptions} from '../src/index'
 
 describe('lib/transforms', function test() {
   const newTest = (
@@ -233,7 +233,8 @@ describe('lib/transforms', function test() {
         return [200, JSON.parse(config.data)]
       })
       const result = await myAxios({
-        url: '/any/', data: {}, method: 'post', headers: {accessToken}})
+        url: '/any/', data: {}, method: 'post', headers: {accessToken},
+      })
       expect(result.data.test).to.equal(true)
       expect(result.data.first).to.equal(true)
     })

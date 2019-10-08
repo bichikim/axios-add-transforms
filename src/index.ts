@@ -1,10 +1,10 @@
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
 import {toUpper} from 'lodash'
 
-type Transformer<C = any> =
-  (payload: AxiosRequestConfig, context?: C) => AxiosRequestConfig
-type TransformerResponse<C = any> =
-  (data: any, context?: C) => any
+export type Transformer<C = any> =
+  (payload: AxiosRequestConfig, context: C) => AxiosRequestConfig
+export type TransformerResponse<C = any> =
+  (data: any, context: C) => any
 
 export interface TransformSetArray {
   request: AxiosTransformer[]
@@ -88,10 +88,6 @@ export default class Transforms<C = any> {
 
   private readonly _options: TransformsOptions
 
-  constructor(options: TransformsOptions) {
-    this._options = options
-  }
-
   get first(): TransformSet<C> | undefined {
     return this._options.first
   }
@@ -100,12 +96,9 @@ export default class Transforms<C = any> {
     return this._options.final
   }
 
-  get context(): C | undefined {
-    const {context} = this._options
-    if(context) {
-      return context()
-    }
-    return undefined
+  get context(): C {
+    const {context = () => ({})} = this._options
+    return context()
   }
 
   get matchers(): Matcher[] {
@@ -114,6 +107,10 @@ export default class Transforms<C = any> {
       return []
     }
     return matchers
+  }
+
+  constructor(options: TransformsOptions = {}) {
+    this._options = options
   }
 
   /**
@@ -161,7 +158,7 @@ export default class Transforms<C = any> {
         Object.assign(
           config,
           {transformResponse: _mutateAxiosTransformer.call(this, transformResponse)},
-          )
+        )
         return config
       },
     )
@@ -175,9 +172,10 @@ export default class Transforms<C = any> {
    */
   private _mutateAxiosTransformer(
     transformResponse: Array<TransformerResponse<C>>,
-    ): AxiosTransformer[] {
+  ): AxiosTransformer[] {
+    const {context} = this
     return transformResponse.map((transform) => {
-      return (data) => (transform(data, this.context))
+      return (data) => (transform(data, context))
     })
   }
 
@@ -187,10 +185,10 @@ export default class Transforms<C = any> {
   private _getTransformSet(
     url: string = '/',
     _method?: Method,
-    ): TransformSet<C> {
+  ): TransformSet<C> {
     const {matchers, final, first} = this
     const matchedMatchers: Matcher[] = []
-    for(let matcher of matchers) {
+    for(const matcher of matchers) {
       const method = toUpper(_method)
       const matcherMethod = toUpper(matcher.method)
       let matchedMethod = false
@@ -217,7 +215,6 @@ export default class Transforms<C = any> {
         response: [],
       })
     }
-
 
     if(first) {
       transformSet = {
