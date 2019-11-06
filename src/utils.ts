@@ -1,8 +1,8 @@
 import {
   AxiosErrorEx,
-  RetryError,
   Transformer,
   TransformerResponse,
+  TransformError,
   TransformSet,
   TransformSetArray,
 } from '@/types'
@@ -24,7 +24,7 @@ export function confirmTransforms<C>(transformSet?: TransformSet<C>): TransformS
   return {
     request: mergeArrays<Transformer<C>>([request]),
     response: mergeArrays<TransformerResponse<C>>([response]),
-    error: mergeArrays<RetryError<C>>([error]),
+    error: mergeArrays<TransformError<C>>([error]),
   }
 }
 
@@ -42,12 +42,11 @@ export function transFormRequest<C>(
 }
 
 export function transFormError<C>(
-  transforms: Array<RetryError<C>>,
+  transforms: Array<TransformError<C>>,
   error: AxiosError,
   context: C,
 ): AxiosErrorEx {
-  return transforms.reduce((error: AxiosErrorEx, transform: RetryError<C>) => {
-    error.config = transform(error, context, error.config)
-    return error
-  }, {...error})
+  return transforms.reduce((error: AxiosErrorEx, transform: TransformError<C>) => {
+    return transform(error, context, error.config)
+  }, error)
 }

@@ -1,23 +1,29 @@
 import {AxiosError, AxiosInstance, AxiosRequestConfig, Method} from 'axios'
 
 export const sInstance = Symbol('instance')
+export const sSecond = Symbol('first')
 
 export interface AxiosErrorEx extends AxiosError {
+  config: AxiosRequestConfigEx
+}
+
+export interface AxiosRequestConfigEx extends AxiosRequestConfig {
   retry?: boolean | number
   [sInstance]?: AxiosInstance
+  [sSecond]?: boolean
 }
 
 export type Transformer<C = any> =
   (payload: AxiosRequestConfig, context: C) => AxiosRequestConfig
 export type TransformerResponse<C = any> =
   (data: any, context: C) => any
-export type RetryError<C = any> =
-  (error: AxiosErrorEx, context: C, config: AxiosRequestConfig) => AxiosRequestConfig
+export type TransformError<C = any> =
+  (error: AxiosErrorEx, context: C, config: AxiosRequestConfig) => AxiosErrorEx
 
 export interface TransformSetArray<C = any> {
   request: Array<Transformer<C>>
   response: Array<TransformerResponse<C>>
-  error: Array<RetryError<C>>
+  error: Array<TransformError<C>>
 }
 
 export interface TransformSet<C = any> {
@@ -26,7 +32,7 @@ export interface TransformSet<C = any> {
   /**
    * This is like axios.interceptors.response.use(__, error)
    */
-  error?: RetryError<C> | Array<RetryError<C>>
+  error?: TransformError<C> | Array<TransformError<C>>
 }
 
 export interface Matcher<C = any> {

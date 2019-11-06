@@ -2,15 +2,18 @@ import {
   AddInterceptorsOptions,
   AxiosErrorEx,
   Matcher,
+  sSecond,
   sInstance,
   Transformer,
   TransformerResponse,
+  TransformError,
   TransformSet,
   TransformSetArray,
   TransformsOptions,
 } from '@/types'
 import {confirmTransforms, mergeArrays, transFormError, transFormRequest} from '@/utils'
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
+
 export * from '@/types'
 export * from '@/utils'
 
@@ -103,30 +106,17 @@ export default class Transforms<C = any> {
     // error transform
     const responseId = axios.interceptors.response.use((res) => (res),
       (error: AxiosErrorEx) => {
-        const {config} = error
-        if(!error.isAxiosError) {
+        const {config , response} = error
+        const {status = 200} = response || {}
+        if(!error.config) {
           throw error
         }
-        if(typeof error.retry === 'number' && error.retry > 0) {
-          error.retry -= 1
-        } else {
-          error.retry = false
-        }
         const {url = '/', method = 'get'} = config
-        const instance = config[sInstance] || axios
         const transformSet = this._saveCache(
           url, method,
           () => (this._getTransformSet(url, method)),
         )
         const newError: AxiosErrorEx = transFormError<C>(transformSet.error, error, this.context)
-        newError[sInstance] = instance
-        return Promise.resolve().then(() => {
-          const {retry} = newError
-          if(retry && newError[sInstance]) {
-            return (newError[sInstance] as AxiosInstance).request(newError.config)
-          }
-          return newError.response
-        })
       })
 
     this._id = {
@@ -191,10 +181,12 @@ export default class Transforms<C = any> {
         const {transform = {}} = value
         result.request = mergeArrays<Transformer<C>>([result.request, transform.request])
         result.response = mergeArrays<TransformerResponse<C>>([result.response, transform.response])
+        result.error = mergeArrays<TransformError<C>>([result.response, transform.error])
         return result
       }, {
         request: [],
         response: [],
+        error: [],
       })
     }
 
@@ -202,6 +194,7 @@ export default class Transforms<C = any> {
       transformSet = {
         request: mergeArrays<Transformer<C>>([first.request, transformSet.request]),
         response: mergeArrays<TransformerResponse<C>>([first.response, transformSet.response]),
+        error: mergeArrays<TransformError<C>>([first.error, transformSet.error]),
       }
     }
 
@@ -209,6 +202,7 @@ export default class Transforms<C = any> {
       transformSet = {
         request: mergeArrays<Transformer<C>>([transformSet.request, final.request]),
         response: mergeArrays<TransformerResponse<C>>([transformSet.response, final.response]),
+        error: mergeArrays<TransformError<C>>([transformSet.error, final.error]),
       }
     }
 
