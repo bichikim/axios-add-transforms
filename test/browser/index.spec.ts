@@ -1,4 +1,4 @@
-import Transforms, {AddInterceptorsOptions, TransformsOptions} from '@/index'
+import Transforms, {AddInterceptorsOptions, confirmTransforms, TransformsOptions} from '@/index'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 
@@ -67,17 +67,20 @@ describe('lib/transforms', function test() {
         {
           test: /^\/bizs\//,
           transform: {
-            request: ({data, headers, params}) => ({
-              data: data && {
-                '_foo': data.foo,
-                '_bar': data.bar,
-              },
-              headers,
-              params: params && {
-                '_foo': params.foo,
-                '_bar': params.bar,
-              },
-            }),
+            request: ({data, headers, params, ...others}) => {
+              return {
+                ...others,
+                data: data && {
+                  '_foo': data.foo,
+                  '_bar': data.bar,
+                },
+                headers,
+                params: params && {
+                  '_foo': params.foo,
+                  '_bar': params.bar,
+                },
+              }
+            },
             response: (data) => {
               if(!data) {
                 return data
@@ -121,7 +124,8 @@ describe('lib/transforms', function test() {
           test: /^\/foos\//,
           method: 'get',
           transform: {
-            request: ({data, headers, params}) => ({
+            request: ({data, headers, params, ...others}) => ({
+              ...others,
               data: data && {
                 '_foo': data.foo,
                 '_bar': data.bar,
@@ -140,13 +144,22 @@ describe('lib/transforms', function test() {
             }),
           },
         },
+        {
+          test: /^\/retry\//,
+          method: 'get',
+          transform: {
+            error: (error) => {
+              return error
+            },
+          },
+        },
       ],
     })
-    transforms.addInterceptors(myAxios, addInterceptorsOptions)
+    transforms.applyTransform(myAxios, addInterceptorsOptions)
     return {transforms, mock, myAxios, expectData, response, requestParam, request, expectResponse}
   }
 
-  describe('addInterceptors', function test() {
+  describe('applyTransform', function test() {
     it('should run', async function test() {
       const {
         mock, myAxios, request, expectResponse, requestParam,
@@ -252,7 +265,6 @@ describe('lib/transforms', function test() {
       expect(result.data.contextRequest).to.equal('context')
       expect(result.data.contextResponse).to.equal('context')
 
-
       const contextElseTest = axios.create()
       const transforms = new Transforms({
         matchers: [
@@ -264,7 +276,7 @@ describe('lib/transforms', function test() {
           },
         ],
       })
-      transforms.addInterceptors(contextElseTest)
+      transforms.applyTransform(contextElseTest)
       const resultData = {
         foo: 'foo',
       }
@@ -372,7 +384,6 @@ describe('lib/transforms', function test() {
 
   describe('confirmTransforms', function test() {
     it('should return confirmTransSet', function test() {
-      const {confirmTransforms} = Transforms
       {
         const result = confirmTransforms()
         expect(result.response).to.be.an('array')
@@ -427,30 +438,14 @@ describe('lib/transforms', function test() {
       } catch(e) {
         error = e
         const {data} = e.response
+        expect(e.response.status).to.equal(401)
         expect(data.code).to.equal(errorData._code)
         expect(data.message).to.equal(errorData._message)
       }
       expect(error).to.instanceOf(Error)
       mock.resetHistory()
     })
-  })
-
-  describe('margeArray', function test() {
-    it('should marge any two values as an array', function test() {
-      const {mergeArray} = Transforms
-      {
-        const result = mergeArray(null, null)
-        expect(result).to.deep.equal([])
-      }
-      {
-        const result = mergeArray(['a'], ['b'])
-        expect(result).to.deep.equal(['a', 'b'])
-      }
-      {
-        const result = mergeArray('a', 'b')
-        expect(result).to.deep.equal(['a', 'b'])
-      }
-    })
+    it('should')
   })
 
   describe('get matchers', function test() {
