@@ -1,3 +1,4 @@
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 import {
   AddInterceptorsOptions,
   AxiosErrorEx,
@@ -9,15 +10,14 @@ import {
   TransformSet,
   TransformSetArray,
   TransformsOptions,
-} from '@/types'
+} from './types'
 import {
   getMatchedMatchers,
   margeMatcher,
   mergeArrays,
   transFormError,
   transFormRequest,
-} from '@/utils'
-import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
+} from './utils'
 
 export * from './types'
 export * from './utils'

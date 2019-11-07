@@ -1,3 +1,4 @@
+import {AxiosRequestConfig} from 'axios'
 import {
   AxiosErrorEx,
   Matcher,
@@ -8,8 +9,7 @@ import {
   TransFormErrorResult,
   TransformSet,
   TransformSetArray,
-} from '@/types'
-import {AxiosRequestConfig} from 'axios'
+} from './types'
 
 export function mergeArrays<T = any>(items: Array<T | T[] | undefined | null>): T[] {
   return items.reduce((result: T[], item: T | T[] | undefined | null) => {
@@ -45,7 +45,7 @@ export function transFormError<C>(
     transform: TransformError<C>,
   ) => {
     const {error} = result
-    const data =  transform(error, error.config, context)
+    const data = transform(error, error.config, context)
     if(Array.isArray(data)) {
       const [error, retry] = data
       result.error = error

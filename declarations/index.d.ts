@@ -1,5 +1,5 @@
-import { AddInterceptorsOptions, InterceptorIds, Matcher, TransformSet, TransformsOptions } from '@/types';
 import { AxiosInstance } from 'axios';
+import { AddInterceptorsOptions, InterceptorIds, Matcher, TransformSet, TransformsOptions } from './types';
 export * from './types';
 export * from './utils';
 export default class Transforms<C = any> {
