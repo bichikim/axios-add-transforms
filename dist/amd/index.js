@@ -87,12 +87,11 @@ define("utils", ["require", "exports"], function (require, exports) {
 });
 define("index", ["require", "exports", "utils", "utils"], function (require, exports, utils_1, utils_2) {
     "use strict";
+    function __export(m) {
+        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+    }
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.margeMatcher = utils_2.margeMatcher;
-    exports.mergeArrays = utils_2.mergeArrays;
-    exports.transFormRequest = utils_2.transFormRequest;
-    exports.getMatchedMatchers = utils_2.getMatchedMatchers;
-    exports.transFormError = utils_2.transFormError;
+    __export(utils_2);
     function _createCacheKey(url, method) {
         return method + ">" + url;
     }

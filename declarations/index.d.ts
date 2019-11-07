@@ -1,7 +1,7 @@
 import { AddInterceptorsOptions, InterceptorIds, Matcher, TransformSet, TransformsOptions } from '@/types';
 import { AxiosInstance } from 'axios';
-export { AxiosErrorEx, ErrorStatus, TransformSet, Matcher, Method, TransformerResponse, TransformSetArray, Transformer, TransformsOptions, AddInterceptorsOptions, InterceptorIds, TransformError, TransFormErrorResult, } from '@/types';
-export { margeMatcher, mergeArrays, transFormRequest, getMatchedMatchers, transFormError, } from '@/utils';
+export * from './types';
+export * from './utils';
 export default class Transforms<C = any> {
     private readonly _options;
     private _interceptorId;

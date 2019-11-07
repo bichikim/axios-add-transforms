@@ -10,7 +10,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 import { getMatchedMatchers, margeMatcher, mergeArrays, transFormError, transFormRequest, } from '@/utils';
-export { margeMatcher, mergeArrays, transFormRequest, getMatchedMatchers, transFormError, } from '@/utils';
+export * from './utils';
 function _createCacheKey(url, method) {
     return method + ">" + url;
 }
