@@ -1,16 +1,24 @@
-import {AxiosError, AxiosInstance, AxiosRequestConfig, Method} from 'axios'
+import {AxiosError, AxiosRequestConfig, AxiosResponse} from 'axios'
 
-export const sInstance = Symbol('instance')
-export const sSecond = Symbol('first')
+export type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' |
+  'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string
 
 export interface AxiosErrorEx extends AxiosError {
-  config: AxiosRequestConfigEx
+  config: AxiosRequestConfig
 }
 
-export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-  retry?: boolean | number
-  [sInstance]?: AxiosInstance
-  [sSecond]?: boolean
+export interface InterceptorIds {
+  request: number
+  response: number
+}
+
+export interface ErrorStatus {
+  retry: number
+}
+
+export interface TransFormErrorResult {
+  error: AxiosErrorEx | AxiosResponse
+  retry: boolean
 }
 
 export type Transformer<C = any> =
@@ -18,7 +26,8 @@ export type Transformer<C = any> =
 export type TransformerResponse<C = any> =
   (data: any, context: C) => any
 export type TransformError<C = any> =
-  (error: AxiosErrorEx, context: C, config: AxiosRequestConfig) => AxiosErrorEx
+  (error: AxiosErrorEx, config: AxiosRequestConfig, context: C)
+    => AxiosErrorEx | [AxiosError, boolean]
 
 export interface TransformSetArray<C = any> {
   request: Array<Transformer<C>>
@@ -38,7 +47,6 @@ export interface TransformSet<C = any> {
 export interface Matcher<C = any> {
   test: RegExp
   method?: 'all' | 'ALL' | Method
-  retry?: boolean | number
   transform: TransformSet<C>
 }
 

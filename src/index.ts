@@ -1,18 +1,24 @@
 import {
   AddInterceptorsOptions,
   AxiosErrorEx,
+  ErrorStatus,
+  InterceptorIds,
   Matcher,
-  sSecond,
-  sInstance,
-  Transformer,
+  Method,
   TransformerResponse,
-  TransformError,
+  TransFormErrorResult,
   TransformSet,
   TransformSetArray,
   TransformsOptions,
 } from '@/types'
-import {confirmTransforms, mergeArrays, transFormError, transFormRequest} from '@/utils'
-import {AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method} from 'axios'
+import {
+  getMatchedMatchers,
+  margeMatcher,
+  mergeArrays,
+  transFormError,
+  transFormRequest,
+} from '@/utils'
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 
 export * from '@/types'
 export * from '@/utils'
@@ -24,7 +30,7 @@ function _createCacheKey(url: string, method: string): string {
 export default class Transforms<C = any> {
 
   private readonly _options: TransformsOptions
-  private _id: { request, response } | null = null
+  private _interceptorId: InterceptorIds | null = null
   private readonly _cache: Map<string, TransformSetArray<C>> = new Map()
 
   get first(): TransformSet<C> | undefined {
@@ -53,12 +59,13 @@ export default class Transforms<C = any> {
    * Eject transform
    * @param axios
    */
-  ejectTransform(axios: AxiosInstance) {
-    if(!this._id) {
+  ejectTransform(axios: AxiosInstance): void {
+    if(!this._interceptorId) {
       return
     }
-    axios.interceptors.request.eject(this._id.request)
-    axios.interceptors.response.eject(this._id.response)
+    axios.interceptors.request.eject(this._interceptorId.request)
+    axios.interceptors.response.eject(this._interceptorId.response)
+    this._interceptorId = null
   }
 
   /**
@@ -66,9 +73,9 @@ export default class Transforms<C = any> {
    * @param axios
    * @param options
    */
-  applyTransform(axios: AxiosInstance, options: AddInterceptorsOptions = {}) {
-    if(this._id) {
-      return
+  applyTransform(axios: AxiosInstance, options: AddInterceptorsOptions = {}): InterceptorIds {
+    if(this._interceptorId) {
+      return this._interceptorId
     }
     const {margeResponse} = options
     const {context} = this
@@ -106,8 +113,7 @@ export default class Transforms<C = any> {
     // error transform
     const responseId = axios.interceptors.response.use((res) => (res),
       (error: AxiosErrorEx) => {
-        const {config , response} = error
-        const {status = 200} = response || {}
+        const {config} = error
         if(!error.config) {
           throw error
         }
@@ -116,13 +122,25 @@ export default class Transforms<C = any> {
           url, method,
           () => (this._getTransformSet(url, method)),
         )
-        const newError: AxiosErrorEx = transFormError<C>(transformSet.error, error, this.context)
+        const {error: result, retry}: TransFormErrorResult = transFormError<C>(
+          transformSet.error, error, this.context)
+        if(result instanceof Error) {
+
+          if(retry) {
+            return Promise.resolve().then(() => (
+              axios.request(result.config)
+            ))
+          }
+          return Promise.reject(result)
+        }
+        return result
       })
 
-    this._id = {
+    this._interceptorId = {
       request: requestId,
       response: responseId,
     }
+    return this._interceptorId
   }
 
   /**
@@ -155,57 +173,22 @@ export default class Transforms<C = any> {
    * Find matched transforms
    */
   private _getTransformSet(
-    url: string = '/',
-    _method?: Method,
+    url: string,
+    method?: Method,
   ): TransformSetArray<C> {
     const {matchers, final, first} = this
-    const matchedMatchers: Matcher[] = []
-    for(const matcher of matchers) {
-      const method = _method && _method.toUpperCase()
-      const matcherMethod = matcher.method && matcher.method.toUpperCase()
-      let matchedMethod = false
-      if(matcher.method === 'ALL' || !matcher.method || !_method) {
-        matchedMethod = true
-      } else {
-        matchedMethod = method === matcherMethod
-      }
-      if(matcher.test.test(url) && matchedMethod) {
-        matchedMatchers.push(matcher)
-      }
-    }
+    const matchedTransforms: Array<TransformSet<C>> = getMatchedMatchers(matchers, url, method)
+    .map(({transform}) => (transform))
 
-    let transformSet: TransformSet<C> = {}
-
-    if(matchedMatchers.length > 0) {
-      transformSet = matchedMatchers.reduce((result: TransformSet<C>, value) => {
-        const {transform = {}} = value
-        result.request = mergeArrays<Transformer<C>>([result.request, transform.request])
-        result.response = mergeArrays<TransformerResponse<C>>([result.response, transform.response])
-        result.error = mergeArrays<TransformError<C>>([result.response, transform.error])
-        return result
-      }, {
-        request: [],
-        response: [],
-        error: [],
-      })
-    }
-
+    let transformSet: TransformSetArray<C> = margeMatcher(matchedTransforms)
     if(first) {
-      transformSet = {
-        request: mergeArrays<Transformer<C>>([first.request, transformSet.request]),
-        response: mergeArrays<TransformerResponse<C>>([first.response, transformSet.response]),
-        error: mergeArrays<TransformError<C>>([first.error, transformSet.error]),
-      }
+      transformSet = margeMatcher([first, transformSet])
     }
 
     if(final) {
-      transformSet = {
-        request: mergeArrays<Transformer<C>>([transformSet.request, final.request]),
-        response: mergeArrays<TransformerResponse<C>>([transformSet.response, final.response]),
-        error: mergeArrays<TransformError<C>>([transformSet.error, final.error]),
-      }
+      transformSet = margeMatcher([transformSet, final])
     }
 
-    return confirmTransforms(transformSet)
+    return transformSet
   }
 }
