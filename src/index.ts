@@ -1,7 +1,6 @@
 import {
   AddInterceptorsOptions,
   AxiosErrorEx,
-  ErrorStatus,
   InterceptorIds,
   Matcher,
   Method,
@@ -20,8 +19,28 @@ import {
 } from '@/utils'
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 
-export * from '@/types'
-export * from '@/utils'
+export {
+  AxiosErrorEx,
+  ErrorStatus,
+  TransformSet,
+  Matcher,
+  Method,
+  TransformerResponse,
+  TransformSetArray,
+  Transformer,
+  TransformsOptions,
+  AddInterceptorsOptions,
+  InterceptorIds,
+  TransformError,
+  TransFormErrorResult,
+} from '@/types'
+export {
+  margeMatcher,
+  mergeArrays,
+  transFormRequest,
+  getMatchedMatchers,
+  transFormError,
+} from '@/utils'
 
 function _createCacheKey(url: string, method: string): string {
   return `${method}>${url}`

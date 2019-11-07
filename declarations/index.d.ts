@@ -1,48 +1,33 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosTransformer, Method } from 'axios';
-export declare type Transformer<C = any> = (payload: AxiosRequestConfig, context: C) => AxiosRequestConfig;
-export declare type TransformerResponse<C = any> = (data: any, context: C) => any;
-export interface TransformSetArray {
-    request: AxiosTransformer[];
-    response: AxiosTransformer[];
-}
-export interface TransformSet<C = any> {
-    request?: Transformer<C> | Array<Transformer<C>>;
-    response?: TransformerResponse<C> | Array<TransformerResponse<C>>;
-}
-export interface Matcher<C = any> {
-    test: RegExp;
-    method?: 'all' | 'ALL' | Method;
-    transform: TransformSet<C>;
-}
-export interface TransformsOptions<C = any> {
-    first?: TransformSet<C>;
-    final?: TransformSet<C>;
-    matchers?: Array<Matcher<C>>;
-    context?: () => C;
-}
-export interface AddInterceptorsOptions {
-    /**
-     * @default 'back'
-     */
-    margeResponse?: 'back' | 'front' | 'none';
-}
+import { AddInterceptorsOptions, InterceptorIds, Matcher, TransformSet, TransformsOptions } from '@/types';
+import { AxiosInstance } from 'axios';
+export { AxiosErrorEx, ErrorStatus, TransformSet, Matcher, Method, TransformerResponse, TransformSetArray, Transformer, TransformsOptions, AddInterceptorsOptions, InterceptorIds, TransformError, TransFormErrorResult, } from '@/types';
+export { margeMatcher, mergeArrays, transFormRequest, getMatchedMatchers, transFormError, } from '@/utils';
 export default class Transforms<C = any> {
-    static confirmTransforms(transformSet?: TransformSet): TransformSetArray;
-    static mergeArray(a: any, b: any): any[];
     private readonly _options;
+    private _interceptorId;
+    private readonly _cache;
     readonly first: TransformSet<C> | undefined;
     readonly final: TransformSet<C> | undefined;
     readonly context: C;
     readonly matchers: Matcher[];
     constructor(options?: TransformsOptions);
     /**
+     * Eject transform
+     * @param axios
+     */
+    ejectTransform(axios: AxiosInstance): void;
+    /**
+     * Apply transform
+     * @param axios
+     * @param options
+     */
+    applyTransform(axios: AxiosInstance, options?: AddInterceptorsOptions): InterceptorIds;
+    /**
      * Add Interceptors for response & request transforms
+     * @deprecated
      */
     addInterceptors(axios: AxiosInstance, options?: AddInterceptorsOptions): AxiosInstance;
-    /**
-     * Make transformResponse can use context
-     */
-    private _mutateAxiosTransformer;
+    private _saveCache;
     /**
      * Find matched transforms
      */

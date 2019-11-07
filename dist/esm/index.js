@@ -9,74 +9,18 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __spreadArrays = (this && this.__spreadArrays) || function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
-};
-import { toUpper } from 'lodash';
+import { getMatchedMatchers, margeMatcher, mergeArrays, transFormError, transFormRequest, } from '@/utils';
+export { margeMatcher, mergeArrays, transFormRequest, getMatchedMatchers, transFormError, } from '@/utils';
+function _createCacheKey(url, method) {
+    return method + ">" + url;
+}
 var Transforms = /** @class */ (function () {
     function Transforms(options) {
         if (options === void 0) { options = {}; }
-        this._options = options;
+        this._interceptorId = null;
+        this._cache = new Map();
+        this._options = __assign({}, options);
     }
-    Transforms.confirmTransforms = function (transformSet) {
-        if (!transformSet) {
-            return {
-                request: [],
-                response: [],
-            };
-        }
-        var request;
-        var response;
-        if (!transformSet.request) {
-            request = [];
-        }
-        else if (Array.isArray(transformSet.request)) {
-            request = transformSet.request;
-        }
-        else {
-            request = [transformSet.request];
-        }
-        if (!transformSet.response) {
-            response = [];
-        }
-        else if (Array.isArray(transformSet.response)) {
-            response = transformSet.response;
-        }
-        else {
-            response = [transformSet.response];
-        }
-        return {
-            request: request,
-            response: response,
-        };
-    };
-    Transforms.mergeArray = function (a, b) {
-        var _a;
-        var _b;
-        if (Array.isArray(a)) {
-            _a = a;
-        }
-        else if (!a) {
-            _a = [];
-        }
-        else {
-            _a = [a];
-        }
-        if (Array.isArray(b)) {
-            _b = b;
-        }
-        else if (!b) {
-            _b = [];
-        }
-        else {
-            _b = [b];
-        }
-        return __spreadArrays(_a, _b);
-    };
     Object.defineProperty(Transforms.prototype, "first", {
         get: function () {
             return this._options.first;
@@ -93,7 +37,7 @@ var Transforms = /** @class */ (function () {
     });
     Object.defineProperty(Transforms.prototype, "context", {
         get: function () {
-            var _c = this._options.context, context = _c === void 0 ? function () { return ({}); } : _c;
+            var _a = this._options.context, context = _a === void 0 ? function () { return ({}); } : _a;
             return context();
         },
         enumerable: true,
@@ -101,108 +45,117 @@ var Transforms = /** @class */ (function () {
     });
     Object.defineProperty(Transforms.prototype, "matchers", {
         get: function () {
-            var matchers = this._options.matchers;
-            if (!matchers) {
-                return [];
-            }
+            var _a = this._options.matchers, matchers = _a === void 0 ? [] : _a;
             return matchers;
         },
         enumerable: true,
         configurable: true
     });
     /**
-     * Add Interceptors for response & request transforms
+     * Eject transform
+     * @param axios
      */
-    Transforms.prototype.addInterceptors = function (axios, options) {
-        var _this = this;
-        if (options === void 0) { options = {}; }
-        var margeResponse = options.margeResponse;
-        var _mutateAxiosTransformer = this._mutateAxiosTransformer;
-        axios.interceptors.request.use(function (config) {
-            var transform = _this._getTransformSet(config.url, config.method);
-            // no transform skip running
-            var transformSet = Transforms.confirmTransforms(transform);
-            // transform config by matchers
-            var transformedConfig = transformSet.request.reduce(function (result, transform) {
-                return transform(result, _this.context);
-            }, __assign({}, config));
-            Object.assign(config, transformedConfig);
-            // add response transforms
-            var transformResponse;
-            // how to merge response transforms
-            switch (margeResponse) {
-                case 'front':
-                    transformResponse = Transforms
-                        .mergeArray(transformSet.response, config.transformResponse);
-                    break;
-                case 'back':
-                    transformResponse = Transforms
-                        .mergeArray(config.transformResponse, transformSet.response);
-                    break;
-                default:
-                    transformResponse = transformSet.response;
-            }
-            // update transformResponse
-            Object.assign(config, { transformResponse: _mutateAxiosTransformer.call(_this, transformResponse) });
-            return config;
-        });
-        // for chaining use
-        return axios;
+    Transforms.prototype.ejectTransform = function (axios) {
+        if (!this._interceptorId) {
+            return;
+        }
+        axios.interceptors.request.eject(this._interceptorId.request);
+        axios.interceptors.response.eject(this._interceptorId.response);
+        this._interceptorId = null;
     };
     /**
-     * Make transformResponse can use context
+     * Apply transform
+     * @param axios
+     * @param options
      */
-    Transforms.prototype._mutateAxiosTransformer = function (transformResponse) {
+    Transforms.prototype.applyTransform = function (axios, options) {
+        var _this = this;
+        if (options === void 0) { options = {}; }
+        if (this._interceptorId) {
+            return this._interceptorId;
+        }
+        var margeResponse = options.margeResponse;
         var context = this.context;
-        return transformResponse.map(function (transform) {
-            return function (data) { return (transform(data, context)); };
+        // request & response transform
+        var requestId = axios.interceptors.request.use(function (config) {
+            var _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
+            // get transform
+            var transformSet = _this._saveCache(url, method, function () { return (_this._getTransformSet(url, method)); });
+            // request
+            var newConfig = transFormRequest(transformSet.request, __assign({}, config), context);
+            // response
+            var responseTransforms = [];
+            if (margeResponse === 'front') {
+                responseTransforms.push(transformSet.response, config.transformResponse);
+            }
+            else if (margeResponse === 'back') {
+                responseTransforms.push(config.transformResponse, transformSet.response);
+            }
+            else {
+                responseTransforms.push(transformSet.response);
+            }
+            var transformResponse = mergeArrays(responseTransforms);
+            newConfig.transformResponse = transformResponse.map(function (transform) { return function (data) { return (transform(data, context)); }; });
+            return newConfig;
         });
+        // error transform
+        var responseId = axios.interceptors.response.use(function (res) { return (res); }, function (error) {
+            var config = error.config;
+            if (!error.config) {
+                throw error;
+            }
+            var _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
+            var transformSet = _this._saveCache(url, method, function () { return (_this._getTransformSet(url, method)); });
+            var _c = transFormError(transformSet.error, error, _this.context), result = _c.error, retry = _c.retry;
+            if (result instanceof Error) {
+                if (retry) {
+                    return Promise.resolve().then(function () { return (axios.request(result.config)); });
+                }
+                return Promise.reject(result);
+            }
+            return result;
+        });
+        this._interceptorId = {
+            request: requestId,
+            response: responseId,
+        };
+        return this._interceptorId;
+    };
+    /**
+     * Add Interceptors for response & request transforms
+     * @deprecated
+     */
+    Transforms.prototype.addInterceptors = function (axios, options) {
+        if (options === void 0) { options = {}; }
+        this.applyTransform(axios, options);
+        return axios;
+    };
+    Transforms.prototype._saveCache = function (url, method, save) {
+        var key = _createCacheKey(url, method);
+        var value = this._cache.get(key);
+        if (!value) {
+            var value_1 = save();
+            this._cache.set(key, value_1);
+            return value_1;
+        }
+        return value;
     };
     /**
      * Find matched transforms
      */
-    Transforms.prototype._getTransformSet = function (url, _method) {
-        if (url === void 0) { url = '/'; }
-        var _c = this, matchers = _c.matchers, final = _c.final, first = _c.first;
-        var matchedMatchers = [];
-        for (var _i = 0, matchers_1 = matchers; _i < matchers_1.length; _i++) {
-            var matcher = matchers_1[_i];
-            var method = toUpper(_method);
-            var matcherMethod = toUpper(matcher.method);
-            var matchedMethod = false;
-            if (matcher.method === 'ALL' || !matcher.method || !_method) {
-                matchedMethod = true;
-            }
-            else {
-                matchedMethod = method === matcherMethod;
-            }
-            if (matcher.test.test(url) && matchedMethod) {
-                matchedMatchers.push(matcher);
-            }
-        }
-        var transformSet = {};
-        if (matchedMatchers.length > 0) {
-            transformSet = matchedMatchers.reduce(function (result, value) {
-                var _c = value.transform, transform = _c === void 0 ? {} : _c;
-                result.request = Transforms.mergeArray(result.request, transform.request);
-                result.response = Transforms.mergeArray(result.response, transform.response);
-                return result;
-            }, {
-                request: [],
-                response: [],
-            });
-        }
+    Transforms.prototype._getTransformSet = function (url, method) {
+        var _a = this, matchers = _a.matchers, final = _a.final, first = _a.first;
+        var matchedTransforms = getMatchedMatchers(matchers, url, method)
+            .map(function (_a) {
+            var transform = _a.transform;
+            return (transform);
+        });
+        var transformSet = margeMatcher(matchedTransforms);
         if (first) {
-            transformSet = {
-                request: Transforms.mergeArray(first.request, transformSet.request),
-                response: Transforms.mergeArray(first.response, transformSet.response),
-            };
+            transformSet = margeMatcher([first, transformSet]);
         }
         if (final) {
-            transformSet = {
-                request: Transforms.mergeArray(transformSet.request, final.request),
-                response: Transforms.mergeArray(transformSet.response, final.response),
-            };
+            transformSet = margeMatcher([transformSet, final]);
         }
         return transformSet;
     };
