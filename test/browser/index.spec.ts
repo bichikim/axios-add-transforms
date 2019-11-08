@@ -149,45 +149,29 @@ describe('lib/transforms', function test() {
           test: /^\/retry/,
           method: 'post',
           transform: {
-            error: [(error, config, context) => {
-              if(config.url === '/retry') {
-                config.url = '/retry1'
-                return [error, true]
-              }
-              if(config.url === '/retry1') {
-                config.url = '/retry2'
-                return [error, true]
-              }
-              if(config.url === '/retry2') {
-                config.url = '/retry3'
-                return [error, true]
-              }
+            error: [(error, context) => {
+              error.config.url = '/test'
               return error
-            },
-            ],
+            }],
           },
         },
         {
-          test: /^\/retry-pass/,
+          test: /^\/retry-request/,
           method: 'post',
           transform: {
-            error: [(error, config) => {
-              if(config.url === '/retry-pass') {
-                config.url = '/retry-pass1'
-                return [error, true]
+            error: [async (error, context) => {
+              error.config.url = '/test'
+              try {
+                error.response = await context.axios({
+                  url: 'retry',
+                  method: 'post',
+                })
+                error.isError = false
+                return error
+              } catch(e) {
+                return e
               }
-            },
-            ],
-          },
-        },
-        {
-          test: /^\/retry-ignore/,
-          method: 'post',
-          transform: {
-            error: [(error) => {
-              return error.response
-            },
-            ],
+            }],
           },
         },
       ],
@@ -472,24 +456,14 @@ describe('lib/transforms', function test() {
         code: 'my-code',
         message: 'my-message',
       })
-      mock.onPost('/retry1').reply(401, {
-        code: 'my-code',
-        message: 'my-message',
-      })
-      mock.onPost('/retry2').reply(402, {
-        code: 'my-code',
-        message: 'my-message',
-      })
-      mock.onPost('/retry3').reply(403, {
-        code: 'my-code',
-        message: 'my-message',
-      })
       try {
         await myAxios({url: '/retry', method: 'post', headers: {accessToken}})
       } catch(e) {
         error = e
         const {data} = e.response
-        expect(e.response.status).to.equal(403)
+        const {url} = e.config
+        expect(e.response.status).to.equal(400)
+        expect(url).to.equal('/test')
         expect(data.code).to.equal(errorData._code)
         expect(data.message).to.equal(errorData._message)
       }
@@ -500,30 +474,31 @@ describe('lib/transforms', function test() {
       const {
         mock, myAxios,
       } = newTest()
-      mock.onPost('/retry-pass').reply(400, {
+      mock.onPost('/retry').reply(200, {
         code: 'my-code',
         message: 'my-message',
       })
-      mock.onPost('/retry-pass1').reply(200, {
+      mock.onPost('/retry-request').reply(400, {
         code: 'my-code',
         message: 'my-message',
       })
-      const result = await myAxios({url: '/retry-pass', method: 'post'})
+
+      const result = await myAxios({url: '/retry-request', method: 'post'})
       expect(result.data.code).to.equal('my-code')
       expect(result.data.message).to.equal('my-message')
     })
-    it('should handle ignore error', async function test() {
-      const {
-        mock, myAxios,
-      } = newTest()
-      mock.onPost('/retry-ignore').reply(400, {
-        code: 'my-code',
-        message: 'my-message',
-      })
-      const result = await myAxios({url: '/retry-ignore', method: 'post'})
-      expect(result.data.code).to.equal('my-code')
-      expect(result.data.message).to.equal('my-message')
-    })
+    // it('should handle ignore error', async function test() {
+    //   const {
+    //     mock, myAxios,
+    //   } = newTest()
+    //   mock.onPost('/retry-ignore').reply(400, {
+    //     code: 'my-code',
+    //     message: 'my-message',
+    //   })
+    //   const result = await myAxios({url: '/retry-ignore', method: 'post'})
+    //   expect(result.data.code).to.equal('my-code')
+    //   expect(result.data.message).to.equal('my-message')
+    // })
   })
 
   describe('get members', function test() {

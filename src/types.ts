@@ -4,7 +4,8 @@ export type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' |
   'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string
 
 export interface AxiosErrorEx extends AxiosError {
-  config: AxiosRequestConfig
+  retry?: boolean
+  isError?: boolean
 }
 
 export interface InterceptorIds {
@@ -16,18 +17,22 @@ export interface ErrorStatus {
   retry: number
 }
 
+export type ErrorReturn = [AxiosError, boolean] | AxiosError
+
 export interface TransFormErrorResult {
   error: AxiosErrorEx | AxiosResponse
   retry: boolean
 }
 
+export type TransErrorReturn = AxiosErrorEx | [AxiosError, boolean]
+
 export type Transformer<C = any> =
-  (payload: AxiosRequestConfig, context: C) => AxiosRequestConfig
+  (payload: AxiosRequestConfig, context: C) => Promise<AxiosRequestConfig> | AxiosRequestConfig
 export type TransformerResponse<C = any> =
-  (data: any, context: C) => any
+  (data: any, context: C) => Promise<any> | any
 export type TransformError<C = any> =
-  (error: AxiosErrorEx, config: AxiosRequestConfig, context: C)
-    => AxiosErrorEx | [AxiosError, boolean]
+  (error: AxiosErrorEx, context: C)
+    => Promise<AxiosError> | AxiosError
 
 export interface TransformSetArray<C = any> {
   request: Array<Transformer<C>>

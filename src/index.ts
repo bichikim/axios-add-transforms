@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
+import {AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosTransformer} from 'axios'
 import {
   AddInterceptorsOptions,
   AxiosErrorEx,
@@ -80,7 +80,7 @@ export default class Transforms<C = any> {
     const {context} = this
 
     // request & response transform
-    const requestId = axios.interceptors.request.use((config: AxiosRequestConfig) => {
+    const requestId = axios.interceptors.request.use(async (config: AxiosRequestConfig) => {
       const {url = '/', method = 'get'} = config
       // get transform
       const transformSet = this._saveCache(
@@ -90,7 +90,7 @@ export default class Transforms<C = any> {
       )
 
       // request
-      const newConfig = transFormRequest(transformSet.request, {...config}, context)
+      const newConfig = await transFormRequest(transformSet.request, {...config}, context)
 
       // response
       const responseTransforms:
@@ -111,7 +111,7 @@ export default class Transforms<C = any> {
 
     // error transform
     const responseId = axios.interceptors.response.use((res) => (res),
-      (error: AxiosErrorEx) => {
+      async (error: AxiosErrorEx) => {
         const {config} = error
         if(!error.config) {
           throw error
@@ -121,18 +121,20 @@ export default class Transforms<C = any> {
           url, method,
           () => (this._getTransformSet(url, method)),
         )
-        const {error: result, retry}: TransFormErrorResult = transFormError<C>(
+        error.isError = true
+        const _error: AxiosErrorEx = await transFormError<C>(
           transformSet.error, error, this.context)
-        if(result instanceof Error) {
+        if(_error.isError) {
 
-          if(retry) {
+          if(_error.retry) {
             return Promise.resolve().then(() => (
-              axios.request(result.config)
+              axios.request(_error.config)
             ))
           }
-          return Promise.reject(result)
+          return Promise.reject(_error)
         }
-        return result
+        // @ts-ignore
+        return Promise.resolve(_error.response)
       })
 
     this._interceptorId = {

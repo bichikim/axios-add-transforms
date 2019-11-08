@@ -1,4 +1,4 @@
-import {AxiosRequestConfig} from 'axios'
+import {AxiosRequestConfig, AxiosResponse} from 'axios'
 import {
   AxiosErrorEx,
   Matcher,
@@ -10,6 +10,18 @@ import {
   TransformSet,
   TransformSetArray,
 } from './types'
+
+export function forEachPromise(items, value: any, ...args: any[]) {
+  return items.reduce((promise, item) => {
+    return promise.then((value) => {
+      const result = item(value, ...args)
+      if(typeof result.then === 'function') {
+        return result
+      }
+      return Promise.resolve(result)
+    })
+  }, Promise.resolve(value))
+}
 
 export function mergeArrays<T = any>(items: Array<T | T[] | undefined | null>): T[] {
   return items.reduce((result: T[], item: T | T[] | undefined | null) => {
@@ -27,35 +39,15 @@ export function transFormRequest<C>(
   config: AxiosRequestConfig,
   context: C,
 ): AxiosRequestConfig {
-  return transforms.reduce((
-    result: AxiosRequestConfig,
-    transform: Transformer,
-  ) => {
-    return transform(result, context)
-  }, config)
+  return forEachPromise(transforms, config, context)
 }
 
 export function transFormError<C>(
   transforms: Array<TransformError<C>>,
   error: AxiosErrorEx,
   context: C,
-): TransFormErrorResult {
-  return transforms.reduce((
-    result: any,
-    transform: TransformError<C>,
-  ) => {
-    const {error} = result
-    const data = transform(error, error.config, context)
-    if(Array.isArray(data)) {
-      const [error, retry] = data
-      result.error = error
-      result.retry = retry
-      return result
-    }
-    result.error = data
-    result.retry = false
-    return result
-  }, {error, retry: false})
+): Promise<AxiosErrorEx> {
+  return forEachPromise(transforms, error, context)
 }
 
 export function getMatchedMatchers(matchers: Matcher[], url: string = '/', method?: Method) {
