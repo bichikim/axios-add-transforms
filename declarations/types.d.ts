@@ -1,7 +1,8 @@
 import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 export declare type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string;
 export interface AxiosErrorEx extends AxiosError {
-    config: AxiosRequestConfig;
+    retry?: boolean;
+    isError?: boolean;
 }
 export interface InterceptorIds {
     request: number;
@@ -10,13 +11,15 @@ export interface InterceptorIds {
 export interface ErrorStatus {
     retry: number;
 }
+export declare type ErrorReturn = [AxiosError, boolean] | AxiosError;
 export interface TransFormErrorResult {
     error: AxiosErrorEx | AxiosResponse;
     retry: boolean;
 }
-export declare type Transformer<C = any> = (payload: AxiosRequestConfig, context: C) => AxiosRequestConfig;
-export declare type TransformerResponse<C = any> = (data: any, context: C) => any;
-export declare type TransformError<C = any> = (error: AxiosErrorEx, config: AxiosRequestConfig, context: C) => AxiosErrorEx | [AxiosError, boolean];
+export declare type TransErrorReturn = AxiosErrorEx | [AxiosError, boolean];
+export declare type Transformer<C = any> = (payload: AxiosRequestConfig, context: C) => Promise<AxiosRequestConfig> | AxiosRequestConfig;
+export declare type TransformerResponse<C = any> = (data: any, context: C) => Promise<any> | any;
+export declare type TransformError<C = any> = (error: AxiosErrorEx, context: C) => Promise<AxiosError> | AxiosError;
 export interface TransformSetArray<C = any> {
     request: Array<Transformer<C>>;
     response: Array<TransformerResponse<C>>;

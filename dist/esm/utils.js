@@ -1,3 +1,25 @@
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
+export function forEachPromise(items, value) {
+    var args = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+    }
+    return items.reduce(function (promise, item) {
+        return promise.then(function (value) {
+            var result = item.apply(void 0, __spreadArrays([value], args));
+            if (typeof result.then === 'function') {
+                return result;
+            }
+            return Promise.resolve(result);
+        });
+    }, Promise.resolve(value));
+}
 export function mergeArrays(items) {
     return items.reduce(function (result, item) {
         if (Array.isArray(item)) {
@@ -10,24 +32,10 @@ export function mergeArrays(items) {
     }, []);
 }
 export function transFormRequest(transforms, config, context) {
-    return transforms.reduce(function (result, transform) {
-        return transform(result, context);
-    }, config);
+    return forEachPromise(transforms, config, context);
 }
 export function transFormError(transforms, error, context) {
-    return transforms.reduce(function (result, transform) {
-        var error = result.error;
-        var data = transform(error, error.config, context);
-        if (Array.isArray(data)) {
-            var error_1 = data[0], retry = data[1];
-            result.error = error_1;
-            result.retry = retry;
-            return result;
-        }
-        result.error = data;
-        result.retry = false;
-        return result;
-    }, { error: error, retry: false });
+    return forEachPromise(transforms, error, context);
 }
 export function getMatchedMatchers(matchers, url, method) {
     if (url === void 0) { url = '/'; }
