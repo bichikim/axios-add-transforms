@@ -1,12 +1,11 @@
-import {AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosTransformer} from 'axios'
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 import {
-  AddInterceptorsOptions,
   AxiosErrorEx,
   InterceptorIds,
+  MargeResponse,
   Matcher,
   Method,
   TransformerResponse,
-  TransFormErrorResult,
   TransformSet,
   TransformSetArray,
   TransformsOptions,
@@ -50,6 +49,11 @@ export default class Transforms<C = any> {
     return matchers
   }
 
+  get margeResponse(): MargeResponse | undefined {
+    const {margeResponse} = this._options
+    return margeResponse
+  }
+
   constructor(options: TransformsOptions = {}) {
     this._options = {...options}
   }
@@ -70,72 +74,22 @@ export default class Transforms<C = any> {
   /**
    * Apply transform
    * @param axios
-   * @param options
    */
-  applyTransform(axios: AxiosInstance, options: AddInterceptorsOptions = {}): InterceptorIds {
+  applyTransform(axios: AxiosInstance): InterceptorIds {
     if(this._interceptorId) {
       return this._interceptorId
     }
-    const {margeResponse} = options
-    const {context} = this
 
     // request & response transform
-    const requestId = axios.interceptors.request.use(async (config: AxiosRequestConfig) => {
-      const {url = '/', method = 'get'} = config
-      // get transform
-      const transformSet = this._saveCache(
-        url,
-        method,
-        () => (this._getTransformSet(url, method)),
-      )
-
-      // request
-      const newConfig = await transFormRequest(transformSet.request, {...config}, context)
-
-      // response
-      const responseTransforms:
-        Array<TransformerResponse<C> | Array<TransformerResponse<C>> | undefined> = []
-      if(margeResponse === 'front') {
-        responseTransforms.push(transformSet.response, config.transformResponse)
-      } else if(margeResponse === 'back') {
-        responseTransforms.push(config.transformResponse, transformSet.response)
-      } else {
-        responseTransforms.push(transformSet.response)
-      }
-      const transformResponse = mergeArrays<AxiosTransformer>(responseTransforms)
-      newConfig.transformResponse = transformResponse.map(
-        (transform) => (data) => (transform(data, context)),
-      )
-      return newConfig
-    })
+    const requestId = axios.interceptors
+    .request.use(this._requestInterceptors())
 
     // error transform
-    const responseId = axios.interceptors.response.use((res) => (res),
-      async (error: AxiosErrorEx) => {
-        const {config} = error
-        if(!error.config) {
-          throw error
-        }
-        const {url = '/', method = 'get'} = config
-        const transformSet = this._saveCache(
-          url, method,
-          () => (this._getTransformSet(url, method)),
-        )
-        error.isError = true
-        const _error: AxiosErrorEx = await transFormError<C>(
-          transformSet.error, error, this.context)
-        if(_error.isError) {
-
-          if(_error.retry) {
-            return Promise.resolve().then(() => (
-              axios.request(_error.config)
-            ))
-          }
-          return Promise.reject(_error)
-        }
-        // @ts-ignore
-        return Promise.resolve(_error.response)
-      })
+    const responseId = axios.interceptors
+    .response.use(
+      (res) => (res),
+      this._errorInterceptors(axios),
+    )
 
     this._interceptorId = {
       request: requestId,
@@ -150,10 +104,80 @@ export default class Transforms<C = any> {
    */
   addInterceptors(
     axios: AxiosInstance,
-    options: AddInterceptorsOptions = {},
   ) {
-    this.applyTransform(axios, options)
+    this.applyTransform(axios)
     return axios
+  }
+
+  private _getResponseTransforms(config: AxiosRequestConfig) {
+    const {margeResponse, context} = this
+    const {url, method} = config
+    const transformSet = this._getTransformSet(url, method)
+    // response
+    const responseTransforms:
+      Array<TransformerResponse<C> |
+        Array<TransformerResponse<C>> | undefined> = []
+    if(margeResponse === 'front') {
+      responseTransforms.push(transformSet.response, config.transformResponse)
+    } else if(margeResponse === 'back') {
+      responseTransforms.push(config.transformResponse, transformSet.response)
+    } else {
+      responseTransforms.push(transformSet.response)
+    }
+    const transformResponse = mergeArrays<AxiosTransformer>(responseTransforms)
+    return transformResponse.map(
+      (transform) => (data) => (transform(data, context)),
+    )
+  }
+
+  private _errorInterceptors(axios: AxiosInstance) {
+    return async (error: AxiosErrorEx) => {
+      const {config} = error
+      if(!error.config) {
+        throw error
+      }
+      const {url = '/', method = 'get'} = config
+      const transformSet = this._saveCache(
+        url, method,
+        () => (this._getTransformSet(url, method)),
+      )
+      error.isError = true
+      const _error: AxiosErrorEx = await transFormError<C>(
+        transformSet.error, error, this.context)
+      if(_error.isError) {
+        if(_error.retry) {
+          return Promise.resolve().then(() => {
+            // reset transform
+            _error.config.transformResponse = []
+            _error.config.transformRequest = []
+            return axios.request(_error.config)
+        })
+        }
+        return Promise.reject(_error)
+      }
+      // @ts-ignore
+      return Promise.resolve(_error.response)
+    }
+  }
+
+  private  _requestInterceptors() {
+    return async (config: AxiosRequestConfig) => {
+      const {context} = this
+      const {url = '/', method = 'get'} = config
+      // get transform
+      const transformSet = this._getTransformSet(url, method)
+
+      // request
+      const newConfig = await transFormRequest(
+        transformSet.request,
+        {...config},
+        context,
+      )
+
+      // response
+      newConfig.transformResponse = this._getResponseTransforms(config)
+      return newConfig
+    }
   }
 
   private _saveCache(
@@ -174,22 +198,24 @@ export default class Transforms<C = any> {
    * Find matched transforms
    */
   private _getTransformSet(
-    url: string,
-    method?: Method,
+    url: string = '/',
+    method: Method = 'get',
   ): TransformSetArray<C> {
-    const {matchers, final, first} = this
-    const matchedTransforms: Array<TransformSet<C>> = getMatchedMatchers(matchers, url, method)
-    .map(({transform}) => (transform))
+    return this._saveCache(url, method, () => {
+      const {matchers, final, first} = this
+      const matchedTransforms: Array<TransformSet<C>> = getMatchedMatchers(matchers, url, method)
+      .map(({transform}) => (transform))
 
-    let transformSet: TransformSetArray<C> = margeMatcher(matchedTransforms)
-    if(first) {
-      transformSet = margeMatcher([first, transformSet])
-    }
+      let transformSet: TransformSetArray<C> = margeMatcher(matchedTransforms)
+      if(first) {
+        transformSet = margeMatcher([first, transformSet])
+      }
 
-    if(final) {
-      transformSet = margeMatcher([transformSet, final])
-    }
+      if(final) {
+        transformSet = margeMatcher([transformSet, final])
+      }
 
-    return transformSet
+      return transformSet
+    })
   }
 }

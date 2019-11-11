@@ -19,6 +19,8 @@ export interface ErrorStatus {
 
 export type ErrorReturn = [AxiosError, boolean] | AxiosError
 
+export type MargeResponse = 'back' | 'front' | 'none'
+
 export interface TransFormErrorResult {
   error: AxiosErrorEx | AxiosResponse
   retry: boolean
@@ -59,12 +61,6 @@ export interface TransformsOptions<C = any> {
   first?: TransformSet<C>
   final?: TransformSet<C>
   matchers?: Array<Matcher<C>>
+  margeResponse?: MargeResponse
   context?: () => C
-}
-
-export interface AddInterceptorsOptions {
-  /**
-   * @default 'back'
-   */
-  margeResponse?: 'back' | 'front' | 'none'
 }

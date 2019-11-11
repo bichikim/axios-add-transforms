@@ -1,11 +1,11 @@
-import Transforms, {AddInterceptorsOptions, TransformsOptions} from '@/index'
+import Transforms, {TransformsOptions} from '@/index'
 import axios, {AxiosInstance} from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 
 describe('lib/transforms', function test() {
   const newTest = (
     options: TransformsOptions = {},
-    addInterceptorsOptions?: AddInterceptorsOptions,
+    margeResponse?: any,
   ) => {
     const myAxios = axios.create()
     const context = {axios: myAxios, test: 'context'}
@@ -49,6 +49,7 @@ describe('lib/transforms', function test() {
       first,
       final,
       context: () => (context),
+      margeResponse,
       matchers: [
         ...matchers,
         {
@@ -146,7 +147,7 @@ describe('lib/transforms', function test() {
           },
         },
         {
-          test: /^\/retry/,
+          test: /^\/retry$/,
           method: 'post',
           transform: {
             error: [(error, context) => {
@@ -174,9 +175,26 @@ describe('lib/transforms', function test() {
             }],
           },
         },
+        {
+          test: /^\/retry-next/,
+          method: 'post',
+          transform: {
+            error: (error) => {
+
+              error.config.data = {pass: true}
+              error.retry = true
+              return error
+            },
+            response: () => {
+              return {
+                response: true,
+              }
+            },
+          },
+        },
       ],
     })
-    transforms.applyTransform(myAxios, addInterceptorsOptions)
+    transforms.applyTransform(myAxios)
     return {
       context,
       transforms, mock, myAxios, expectData, response, requestParam, request, expectResponse,
@@ -390,9 +408,7 @@ describe('lib/transforms', function test() {
       const {
         mock, myAxios, response, expectData,
         request, expectResponse,
-      } = newTest({}, {
-        margeResponse: 'front',
-      })
+      } = newTest({}, 'front')
 
       // get
       {
@@ -405,38 +421,6 @@ describe('lib/transforms', function test() {
       }
     })
   })
-
-  // describe('confirmTransforms', function test() {
-  //   it('should return confirmTransSet', function test() {
-  //     {
-  //       const result = confirmTransforms()
-  //       expect(result.response).to.be.an('array')
-  //       expect(result.request).to.be.an('array')
-  //     }
-  //     {
-  //       const result = confirmTransforms({
-  //         response: [],
-  //       })
-  //       expect(result.response).to.be.an('array')
-  //       expect(result.request).to.be.an('array')
-  //     }
-  //     {
-  //       const result = confirmTransforms({
-  //         request: [],
-  //       })
-  //       expect(result.response).to.be.an('array')
-  //       expect(result.request).to.be.an('array')
-  //     }
-  //     {
-  //       const result = confirmTransforms({
-  //         request: (payload) => (payload),
-  //         response: (payload) => (payload),
-  //       })
-  //       expect(result.response).to.be.an('array')
-  //       expect(result.request).to.be.an('array')
-  //     }
-  //   })
-  // })
 
   describe('error', function test() {
     it('should handle last error', async function test() {
@@ -487,18 +471,23 @@ describe('lib/transforms', function test() {
       expect(result.data.code).to.equal('my-code')
       expect(result.data.message).to.equal('my-message')
     })
-    // it('should handle ignore error', async function test() {
-    //   const {
-    //     mock, myAxios,
-    //   } = newTest()
-    //   mock.onPost('/retry-ignore').reply(400, {
-    //     code: 'my-code',
-    //     message: 'my-message',
-    //   })
-    //   const result = await myAxios({url: '/retry-ignore', method: 'post'})
-    //   expect(result.data.code).to.equal('my-code')
-    //   expect(result.data.message).to.equal('my-message')
-    // })
+    it('should retry', async function test() {
+      const {
+        mock, myAxios,
+      } = newTest()
+      mock.onPost('/retry-next').reply((config) => {
+        const data = config.data
+        if(data && data.pass) {
+          return [200]
+        }
+        return [401]
+      })
+      const result = await myAxios({
+        url: '/retry-next',
+        method: 'post',
+      })
+      expect(result.data.response).to.equal(true)
+    })
   })
 
   describe('get members', function test() {
