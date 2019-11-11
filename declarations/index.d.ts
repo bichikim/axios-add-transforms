@@ -1,5 +1,5 @@
 import { AxiosInstance } from 'axios';
-import { AddInterceptorsOptions, InterceptorIds, Matcher, TransformSet, TransformsOptions } from './types';
+import { InterceptorIds, MargeResponse, Matcher, TransformSet, TransformsOptions } from './types';
 export * from './types';
 export * from './utils';
 export default class Transforms<C = any> {
@@ -10,6 +10,7 @@ export default class Transforms<C = any> {
     readonly final: TransformSet<C> | undefined;
     readonly context: C;
     readonly matchers: Matcher[];
+    readonly margeResponse: MargeResponse | undefined;
     constructor(options?: TransformsOptions);
     /**
      * Eject transform
@@ -19,14 +20,16 @@ export default class Transforms<C = any> {
     /**
      * Apply transform
      * @param axios
-     * @param options
      */
-    applyTransform(axios: AxiosInstance, options?: AddInterceptorsOptions): InterceptorIds;
+    applyTransform(axios: AxiosInstance): InterceptorIds;
     /**
      * Add Interceptors for response & request transforms
      * @deprecated
      */
-    addInterceptors(axios: AxiosInstance, options?: AddInterceptorsOptions): AxiosInstance;
+    addInterceptors(axios: AxiosInstance): AxiosInstance;
+    private _getResponseTransforms;
+    private _errorInterceptors;
+    private _requestInterceptors;
     private _saveCache;
     /**
      * Find matched transforms

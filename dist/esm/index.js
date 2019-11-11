@@ -87,6 +87,14 @@ var Transforms = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Transforms.prototype, "margeResponse", {
+        get: function () {
+            var margeResponse = this._options.margeResponse;
+            return margeResponse;
+        },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * Eject transform
      * @param axios
@@ -102,48 +110,52 @@ var Transforms = /** @class */ (function () {
     /**
      * Apply transform
      * @param axios
-     * @param options
      */
-    Transforms.prototype.applyTransform = function (axios, options) {
-        var _this = this;
-        if (options === void 0) { options = {}; }
+    Transforms.prototype.applyTransform = function (axios) {
         if (this._interceptorId) {
             return this._interceptorId;
         }
-        var margeResponse = options.margeResponse;
-        var context = this.context;
         // request & response transform
-        var requestId = axios.interceptors.request.use(function (config) { return __awaiter(_this, void 0, void 0, function () {
-            var _a, url, _b, method, transformSet, newConfig, responseTransforms, transformResponse;
-            var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
-                        transformSet = this._saveCache(url, method, function () { return (_this._getTransformSet(url, method)); });
-                        return [4 /*yield*/, transFormRequest(transformSet.request, __assign({}, config), context)
-                            // response
-                        ];
-                    case 1:
-                        newConfig = _c.sent();
-                        responseTransforms = [];
-                        if (margeResponse === 'front') {
-                            responseTransforms.push(transformSet.response, config.transformResponse);
-                        }
-                        else if (margeResponse === 'back') {
-                            responseTransforms.push(config.transformResponse, transformSet.response);
-                        }
-                        else {
-                            responseTransforms.push(transformSet.response);
-                        }
-                        transformResponse = mergeArrays(responseTransforms);
-                        newConfig.transformResponse = transformResponse.map(function (transform) { return function (data) { return (transform(data, context)); }; });
-                        return [2 /*return*/, newConfig];
-                }
-            });
-        }); });
+        var requestId = axios.interceptors
+            .request.use(this._requestInterceptors());
         // error transform
-        var responseId = axios.interceptors.response.use(function (res) { return (res); }, function (error) { return __awaiter(_this, void 0, void 0, function () {
+        var responseId = axios.interceptors
+            .response.use(function (res) { return (res); }, this._errorInterceptors(axios));
+        this._interceptorId = {
+            request: requestId,
+            response: responseId,
+        };
+        return this._interceptorId;
+    };
+    /**
+     * Add Interceptors for response & request transforms
+     * @deprecated
+     */
+    Transforms.prototype.addInterceptors = function (axios) {
+        this.applyTransform(axios);
+        return axios;
+    };
+    Transforms.prototype._getResponseTransforms = function (config) {
+        var _a = this, margeResponse = _a.margeResponse, context = _a.context;
+        var url = config.url, method = config.method;
+        var transformSet = this._getTransformSet(url, method);
+        // response
+        var responseTransforms = [];
+        if (margeResponse === 'front') {
+            responseTransforms.push(transformSet.response, config.transformResponse);
+        }
+        else if (margeResponse === 'back') {
+            responseTransforms.push(config.transformResponse, transformSet.response);
+        }
+        else {
+            responseTransforms.push(transformSet.response);
+        }
+        var transformResponse = mergeArrays(responseTransforms);
+        return transformResponse.map(function (transform) { return function (data) { return (transform(data, context)); }; });
+    };
+    Transforms.prototype._errorInterceptors = function (axios) {
+        var _this = this;
+        return function (error) { return __awaiter(_this, void 0, void 0, function () {
             var config, _a, url, _b, method, transformSet, _error;
             var _this = this;
             return __generator(this, function (_c) {
@@ -161,7 +173,12 @@ var Transforms = /** @class */ (function () {
                         _error = _c.sent();
                         if (_error.isError) {
                             if (_error.retry) {
-                                return [2 /*return*/, Promise.resolve().then(function () { return (axios.request(_error.config)); })];
+                                return [2 /*return*/, Promise.resolve().then(function () {
+                                        // reset transform
+                                        _error.config.transformResponse = [];
+                                        _error.config.transformRequest = [];
+                                        return axios.request(_error.config);
+                                    })];
                             }
                             return [2 /*return*/, Promise.reject(_error)];
                         }
@@ -169,21 +186,29 @@ var Transforms = /** @class */ (function () {
                         return [2 /*return*/, Promise.resolve(_error.response)];
                 }
             });
-        }); });
-        this._interceptorId = {
-            request: requestId,
-            response: responseId,
-        };
-        return this._interceptorId;
+        }); };
     };
-    /**
-     * Add Interceptors for response & request transforms
-     * @deprecated
-     */
-    Transforms.prototype.addInterceptors = function (axios, options) {
-        if (options === void 0) { options = {}; }
-        this.applyTransform(axios, options);
-        return axios;
+    Transforms.prototype._requestInterceptors = function () {
+        var _this = this;
+        return function (config) { return __awaiter(_this, void 0, void 0, function () {
+            var context, _a, url, _b, method, transformSet, newConfig;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        context = this.context;
+                        _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
+                        transformSet = this._getTransformSet(url, method);
+                        return [4 /*yield*/, transFormRequest(transformSet.request, __assign({}, config), context)
+                            // response
+                        ];
+                    case 1:
+                        newConfig = _c.sent();
+                        // response
+                        newConfig.transformResponse = this._getResponseTransforms(config);
+                        return [2 /*return*/, newConfig];
+                }
+            });
+        }); };
     };
     Transforms.prototype._saveCache = function (url, method, save) {
         var key = _createCacheKey(url, method);
@@ -199,20 +224,25 @@ var Transforms = /** @class */ (function () {
      * Find matched transforms
      */
     Transforms.prototype._getTransformSet = function (url, method) {
-        var _a = this, matchers = _a.matchers, final = _a.final, first = _a.first;
-        var matchedTransforms = getMatchedMatchers(matchers, url, method)
-            .map(function (_a) {
-            var transform = _a.transform;
-            return (transform);
+        var _this = this;
+        if (url === void 0) { url = '/'; }
+        if (method === void 0) { method = 'get'; }
+        return this._saveCache(url, method, function () {
+            var _a = _this, matchers = _a.matchers, final = _a.final, first = _a.first;
+            var matchedTransforms = getMatchedMatchers(matchers, url, method)
+                .map(function (_a) {
+                var transform = _a.transform;
+                return (transform);
+            });
+            var transformSet = margeMatcher(matchedTransforms);
+            if (first) {
+                transformSet = margeMatcher([first, transformSet]);
+            }
+            if (final) {
+                transformSet = margeMatcher([transformSet, final]);
+            }
+            return transformSet;
         });
-        var transformSet = margeMatcher(matchedTransforms);
-        if (first) {
-            transformSet = margeMatcher([first, transformSet]);
-        }
-        if (final) {
-            transformSet = margeMatcher([transformSet, final]);
-        }
-        return transformSet;
     };
     return Transforms;
 }());
