@@ -1,8 +1,8 @@
 import { AxiosRequestConfig } from 'axios';
-import { AxiosErrorEx, Matcher, Method, Transformer, TransformError, TransformSet, TransformSetArray } from './types';
+import { AxiosErrorEx, AxiosRequestConfigEx, Matcher, Method, Transformer, TransformError, TransformSet, TransformSetArray } from './types';
 export declare function forEachPromise(items: any, value: any, ...args: any[]): any;
 export declare function mergeArrays<T = any>(items: Array<T | T[] | undefined | null>): T[];
-export declare function transFormRequest<C>(transforms: Array<Transformer<C>>, config: AxiosRequestConfig, context: C): AxiosRequestConfig;
+export declare function transFormRequest<C>(transforms: Array<Transformer<C>>, config: AxiosRequestConfigEx, context: C): AxiosRequestConfig;
 export declare function transFormError<C>(transforms: Array<TransformError<C>>, error: AxiosErrorEx, context: C): Promise<AxiosErrorEx>;
 export declare function getMatchedMatchers(matchers: Matcher[], url?: string, method?: Method): Matcher<any>[];
 export declare function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C>;

@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
+import {AxiosInstance, AxiosRequestConfig} from 'axios'
 import {
   AxiosErrorEx,
   AxiosRequestConfigEx,

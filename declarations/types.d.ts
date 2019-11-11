@@ -3,6 +3,10 @@ export declare type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'GET'
 export interface AxiosErrorEx extends AxiosError {
     retry?: boolean;
     isError?: boolean;
+    config: AxiosRequestConfigEx;
+}
+export interface AxiosRequestConfigEx extends AxiosRequestConfig {
+    __oldConfig?: any;
 }
 export interface InterceptorIds {
     request: number;
@@ -19,7 +23,7 @@ export interface TransFormErrorResult {
 }
 export declare type TransErrorReturn = AxiosErrorEx | [AxiosError, boolean];
 export declare type Transformer<C = any> = (payload: AxiosRequestConfig, context: C) => Promise<AxiosRequestConfig> | AxiosRequestConfig;
-export declare type TransformerResponse<C = any> = (data: any, context: C) => Promise<any> | any;
+export declare type TransformerResponse<C = any> = (data: any, context: C, config: AxiosRequestConfigEx) => Promise<any> | any;
 export declare type TransformError<C = any> = (error: AxiosErrorEx, context: C) => Promise<AxiosError> | AxiosError;
 export interface TransformSetArray<C = any> {
     request: Array<Transformer<C>>;
