@@ -136,6 +136,13 @@ export default class Transforms<C = any> {
       if(!error.config) {
         throw error
       }
+      if(typeof config.data === 'string') {
+        try {
+          config.data = JSON.parse(config.data)
+        } catch(e) {
+          // skip
+        }
+      }
       const {url = '/', method = 'get'} = config
       const transformSet = this._saveCache(
         url, method,

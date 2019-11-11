@@ -173,6 +173,7 @@ var Transforms = /** @class */ (function () {
                         _error = _c.sent();
                         if (_error.isError) {
                             if (_error.retry) {
+                                console.log('retry');
                                 return [2 /*return*/, Promise.resolve().then(function () {
                                         // reset transform
                                         _error.config.transformResponse = [];
