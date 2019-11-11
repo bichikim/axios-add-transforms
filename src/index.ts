@@ -1,6 +1,7 @@
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 import {
   AxiosErrorEx,
+  AxiosRequestConfigEx,
   InterceptorIds,
   MargeResponse,
   Matcher,
@@ -124,9 +125,9 @@ export default class Transforms<C = any> {
     } else {
       responseTransforms.push(transformSet.response)
     }
-    const transformResponse = mergeArrays<AxiosTransformer>(responseTransforms)
+    const transformResponse = mergeArrays<TransformerResponse<C>>(responseTransforms)
     return transformResponse.map(
-      (transform) => (data) => (transform(data, context)),
+      (transform) => (data) => (transform(data, context, config)),
     )
   }
 
@@ -136,6 +137,12 @@ export default class Transforms<C = any> {
       if(!error.config) {
         throw error
       }
+      const {__oldConfig} = config
+      if(__oldConfig) {
+        config.url = __oldConfig.url
+        config.method = __oldConfig.method
+      }
+
       if(typeof config.data === 'string') {
         try {
           config.data = JSON.parse(config.data)
@@ -158,7 +165,7 @@ export default class Transforms<C = any> {
             _error.config.transformResponse = []
             _error.config.transformRequest = []
             return axios.request(_error.config)
-        })
+          })
         }
         return Promise.reject(_error)
       }
@@ -167,22 +174,28 @@ export default class Transforms<C = any> {
     }
   }
 
-  private  _requestInterceptors() {
-    return async (config: AxiosRequestConfig) => {
+  private _requestInterceptors() {
+    return async (config: AxiosRequestConfigEx) => {
       const {context} = this
-      const {url = '/', method = 'get'} = config
+      const {__oldConfig} = config
+      let {url = '/', method = 'get'} = config
+      if(__oldConfig) {
+        url = __oldConfig.url
+        method = __oldConfig.method
+      }
+
       // get transform
       const transformSet = this._getTransformSet(url, method)
-
+      const payloadConfig = {...config, __oldConfig: {...config}}
       // request
       const newConfig = await transFormRequest(
         transformSet.request,
-        {...config},
+        payloadConfig,
         context,
       )
 
       // response
-      newConfig.transformResponse = this._getResponseTransforms(config)
+      newConfig.transformResponse = this._getResponseTransforms(payloadConfig)
       return newConfig
     }
   }

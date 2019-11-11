@@ -147,17 +147,7 @@ describe('lib/transforms', function test() {
           },
         },
         {
-          test: /^\/retry$/,
-          method: 'post',
-          transform: {
-            error: [(error, context) => {
-              error.config.url = '/test'
-              return error
-            }],
-          },
-        },
-        {
-          test: /^\/retry-request/,
+          test: /^\/retry-request$/,
           method: 'post',
           transform: {
             error: [async (error, context) => {
@@ -176,7 +166,7 @@ describe('lib/transforms', function test() {
           },
         },
         {
-          test: /^\/retry-next/,
+          test: /^\/retry-next$/,
           method: 'post',
           transform: {
             error: (error) => {
@@ -189,6 +179,21 @@ describe('lib/transforms', function test() {
               return {
                 response: true,
               }
+            },
+          },
+        },
+        {
+          test: /^\/retry-change$/,
+          method: 'post',
+          transform: {
+            request(payload) {
+              payload.url = '/retry-change-new'
+              return payload
+            },
+            error: (error) => {
+              error.config.url = '/retry-change2'
+              error.retry = true
+              return error
             },
           },
         },
@@ -423,37 +428,6 @@ describe('lib/transforms', function test() {
   })
 
   describe('error', function test() {
-    it('should handle last error', async function test() {
-      const {
-        mock, myAxios,
-      } = newTest()
-
-      const accessToken = 'access-token'
-      let error
-
-      const errorData = {
-        _code: 'my-code',
-        _message: 'my-message',
-      }
-
-      mock.onPost('/retry').reply(400, {
-        code: 'my-code',
-        message: 'my-message',
-      })
-      try {
-        await myAxios({url: '/retry', method: 'post', headers: {accessToken}})
-      } catch(e) {
-        error = e
-        const {data} = e.response
-        const {url} = e.config
-        expect(e.response.status).to.equal(400)
-        expect(url).to.equal('/test')
-        expect(data.code).to.equal(errorData._code)
-        expect(data.message).to.equal(errorData._message)
-      }
-      expect(error).to.instanceOf(Error)
-      mock.resetHistory()
-    })
     it('should handle response', async function test() {
       const {
         mock, myAxios,
@@ -486,6 +460,23 @@ describe('lib/transforms', function test() {
         url: '/retry-next',
         method: 'post',
       })
+      expect(result.data.response).to.equal(true)
+    })
+    it('should retry in same matcher', async function test() {
+      const {
+        mock, myAxios,
+      } = newTest()
+      mock.onPost('/retry-change-new').reply(() => {
+        return [401, {}]
+      })
+      mock.onPost('/retry-change2').reply(() => {
+        return [200, {response: true}]
+      })
+      const result = await myAxios({
+        url: '/retry-change',
+        method: 'post',
+      })
+
       expect(result.data.response).to.equal(true)
     })
   })

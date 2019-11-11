@@ -151,12 +151,12 @@ var Transforms = /** @class */ (function () {
             responseTransforms.push(transformSet.response);
         }
         var transformResponse = mergeArrays(responseTransforms);
-        return transformResponse.map(function (transform) { return function (data) { return (transform(data, context)); }; });
+        return transformResponse.map(function (transform) { return function (data) { return (transform(data, context, config)); }; });
     };
     Transforms.prototype._errorInterceptors = function (axios) {
         var _this = this;
         return function (error) { return __awaiter(_this, void 0, void 0, function () {
-            var config, _a, url, _b, method, transformSet, _error;
+            var config, __oldConfig, _a, url, _b, method, transformSet, _error;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -164,6 +164,19 @@ var Transforms = /** @class */ (function () {
                         config = error.config;
                         if (!error.config) {
                             throw error;
+                        }
+                        __oldConfig = config.__oldConfig;
+                        if (__oldConfig) {
+                            config.url = __oldConfig.url;
+                            config.method = __oldConfig.method;
+                        }
+                        if (typeof config.data === 'string') {
+                            try {
+                                config.data = JSON.parse(config.data);
+                            }
+                            catch (e) {
+                                // skip
+                            }
                         }
                         _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
                         transformSet = this._saveCache(url, method, function () { return (_this._getTransformSet(url, method)); });
@@ -173,7 +186,6 @@ var Transforms = /** @class */ (function () {
                         _error = _c.sent();
                         if (_error.isError) {
                             if (_error.retry) {
-                                console.log('retry');
                                 return [2 /*return*/, Promise.resolve().then(function () {
                                         // reset transform
                                         _error.config.transformResponse = [];
@@ -192,20 +204,26 @@ var Transforms = /** @class */ (function () {
     Transforms.prototype._requestInterceptors = function () {
         var _this = this;
         return function (config) { return __awaiter(_this, void 0, void 0, function () {
-            var context, _a, url, _b, method, transformSet, newConfig;
+            var context, __oldConfig, _a, url, _b, method, transformSet, payloadConfig, newConfig;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         context = this.context;
+                        __oldConfig = config.__oldConfig;
                         _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
+                        if (__oldConfig) {
+                            url = __oldConfig.url;
+                            method = __oldConfig.method;
+                        }
                         transformSet = this._getTransformSet(url, method);
-                        return [4 /*yield*/, transFormRequest(transformSet.request, __assign({}, config), context)
+                        payloadConfig = __assign(__assign({}, config), { __oldConfig: __assign({}, config) });
+                        return [4 /*yield*/, transFormRequest(transformSet.request, payloadConfig, context)
                             // response
                         ];
                     case 1:
                         newConfig = _c.sent();
                         // response
-                        newConfig.transformResponse = this._getResponseTransforms(config);
+                        newConfig.transformResponse = this._getResponseTransforms(payloadConfig);
                         return [2 /*return*/, newConfig];
                 }
             });

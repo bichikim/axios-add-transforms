@@ -1,6 +1,6 @@
 import {AxiosRequestConfig, AxiosResponse} from 'axios'
 import {
-  AxiosErrorEx,
+  AxiosErrorEx, AxiosRequestConfigEx,
   Matcher,
   Method,
   Transformer,
@@ -36,7 +36,7 @@ export function mergeArrays<T = any>(items: Array<T | T[] | undefined | null>): 
 
 export function transFormRequest<C>(
   transforms: Array<Transformer<C>>,
-  config: AxiosRequestConfig,
+  config: AxiosRequestConfigEx,
   context: C,
 ): AxiosRequestConfig {
   return forEachPromise(transforms, config, context)
