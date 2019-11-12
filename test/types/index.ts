@@ -1,4 +1,4 @@
-import Transforms, {Transformer, TransformerResponse, TransformSetArray} from '@/index'
+import Transforms, {TransformerRequest, TransformerResponse, TransformSetArray} from '@/index'
 
 {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -7,7 +7,7 @@ import Transforms, {Transformer, TransformerResponse, TransformSetArray} from '@
   Transforms.mergeArray(null, [])
   Transforms.confirmTransforms({})
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const transformer: Transformer = (payload, context) => {
+  const transformer: TransformerRequest = (payload, context) => {
     const baseURL = payload.baseURL
     return {
       baseURL,
@@ -44,7 +44,7 @@ import Transforms, {Transformer, TransformerResponse, TransformSetArray} from '@
     url: '/foo',
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const transformer: Transformer<Context> = (payload, context) => {
+  const transformer: TransformerRequest<Context> = (payload, context) => {
     const baseURL = payload.baseURL
     return {
       baseURL,

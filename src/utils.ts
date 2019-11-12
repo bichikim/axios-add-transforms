@@ -1,12 +1,13 @@
-import {AxiosRequestConfig, AxiosResponse} from 'axios'
+import {AxiosRequestConfig} from 'axios'
 import {
-  AxiosErrorEx, AxiosRequestConfigEx,
+  AxiosErrorEx,
+  AxiosRequestConfigEx,
   Matcher,
   Method,
-  Transformer,
+  TransformerRequest,
   TransformerResponse,
   TransformError,
-  TransFormErrorResult,
+  TransFormerStatus,
   TransformSet,
   TransformSetArray,
 } from './types'
@@ -35,10 +36,10 @@ export function mergeArrays<T = any>(items: Array<T | T[] | undefined | null>): 
 }
 
 export function transFormRequest<C>(
-  transforms: Array<Transformer<C>>,
+  transforms: Array<TransformerRequest<C>>,
   config: AxiosRequestConfigEx,
   context: C,
-): AxiosRequestConfig {
+): Promise<AxiosRequestConfig> {
   return forEachPromise(transforms, config, context)
 }
 
@@ -46,8 +47,9 @@ export function transFormError<C>(
   transforms: Array<TransformError<C>>,
   error: AxiosErrorEx,
   context: C,
+  status: TransFormerStatus,
 ): Promise<AxiosErrorEx> {
-  return forEachPromise(transforms, error, context)
+  return forEachPromise(transforms, error, context, status)
 }
 
 export function getMatchedMatchers(matchers: Matcher[], url: string = '/', method?: Method) {
@@ -56,7 +58,7 @@ export function getMatchedMatchers(matchers: Matcher[], url: string = '/', metho
     const {method, test} = matcher
     const matcherMethod = method && method.toUpperCase()
     let isMatchMethod = false
-    if(matcher.method === 'ALL' || !method || !_method) {
+    if(matcherMethod === 'ALL' || !method || !_method) {
       isMatchMethod = true
     } else {
       isMatchMethod = _method === matcherMethod
@@ -70,7 +72,7 @@ export function getMatchedMatchers(matchers: Matcher[], url: string = '/', metho
 
 export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> {
   return matchers.reduce((result: TransformSetArray<C>, transform: TransformSet = {}) => {
-    result.request = mergeArrays<Transformer<C>>([result.request, transform.request])
+    result.request = mergeArrays<TransformerRequest<C>>([result.request, transform.request])
     result.response = mergeArrays<TransformerResponse<C>>([result.response, transform.response])
     result.error = mergeArrays<TransformError<C>>([result.error, transform.error])
     return result
@@ -79,4 +81,14 @@ export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> 
     response: [],
     error: [],
   })
+}
+
+export function onlyArray(value: any | any[]) {
+  if(!Array.isArray(value)) {
+    if(!value) {
+      return []
+    }
+    return [value]
+  }
+  return value
 }

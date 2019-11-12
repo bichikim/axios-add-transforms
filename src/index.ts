@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosRequestConfig} from 'axios'
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 import {
   AxiosErrorEx,
   AxiosRequestConfigEx,
@@ -6,7 +6,9 @@ import {
   MargeResponse,
   Matcher,
   Method,
+  StatusKeyFunction,
   TransformerResponse,
+  TransFormerStatus,
   TransformSet,
   TransformSetArray,
   TransformsOptions,
@@ -26,11 +28,54 @@ function _createCacheKey(url: string, method: string): string {
   return `${method}>${url}`
 }
 
+export class StatusMapper<K extends object, S> {
+
+  private readonly _statusMap: WeakMap<K, S> = new WeakMap()
+  private readonly _creator: () => K
+
+  constructor(creator: (() => K)) {
+    this._creator = creator
+  }
+
+  getStatus(key: K): S | undefined {
+    return this._statusMap.get(key)
+  }
+
+  saveStatus(key: K, value: S) {
+    this._statusMap.set(key, value)
+  }
+
+  createStatus(value: S): K {
+    const key = this._creator()
+    this._statusMap.set(key, value)
+    return key
+  }
+
+  getStatusInMany(keys: any[] | any) {
+    if(Array.isArray(keys)) {
+     for(const key of keys) {
+       const value = this.getStatus(key)
+       if(value) {
+         return {key, value}
+       }
+     }
+     return {key: undefined, value: undefined}
+    }
+    const value = this._statusMap.get(keys)
+    if(value) {
+      return {key: keys, value}
+    }
+    return  {key: undefined, value: undefined}
+  }
+}
+
 export default class Transforms<C = any> {
 
   private readonly _options: TransformsOptions
   private _interceptorId: InterceptorIds | null = null
   private readonly _cache: Map<string, TransformSetArray<C>> = new Map()
+  private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
+    = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (data) => (data))
 
   get first(): TransformSet<C> | undefined {
     return this._options.first
@@ -63,13 +108,14 @@ export default class Transforms<C = any> {
    * Eject transform
    * @param axios
    */
-  ejectTransform(axios: AxiosInstance): void {
+  ejectTransform(axios: AxiosInstance): boolean {
     if(!this._interceptorId) {
-      return
+      return false
     }
     axios.interceptors.request.eject(this._interceptorId.request)
     axios.interceptors.response.eject(this._interceptorId.response)
     this._interceptorId = null
+    return true
   }
 
   /**
@@ -110,7 +156,13 @@ export default class Transforms<C = any> {
     return axios
   }
 
-  private _getResponseTransforms(config: AxiosRequestConfig) {
+  /**
+   * Return AxiosTransformer form response
+   * @param config
+   * @private
+   */
+  private _getResponseTransforms(config: AxiosRequestConfig):
+    AxiosTransformer[] {
     const {margeResponse, context} = this
     const {url, method} = config
     const transformSet = this._getTransformSet(url, method)
@@ -131,75 +183,79 @@ export default class Transforms<C = any> {
     )
   }
 
-  private _errorInterceptors(axios: AxiosInstance) {
+  /**
+   * Return error interceptor
+   * @param axios axios instance
+   * @private
+   */
+  private _errorInterceptors(axios: AxiosInstance):
+    ((error: AxiosErrorEx) => Promise<AxiosErrorEx | any>) {
     return async (error: AxiosErrorEx) => {
       const {config} = error
-      if(!error.config) {
+      if(!config) {
         throw error
       }
+
+      const {key, value: status = {}} = this._statusMap.getStatusInMany(config.transformRequest)
+      const saveStatusKey = key || this._statusMap.createStatus(status)
+      config.transformResponse = []
+      config.transformRequest = []
+      config.transformRequest.push(saveStatusKey)
+
       const {__oldConfig} = config
+
       if(__oldConfig) {
         config.url = __oldConfig.url
         config.method = __oldConfig.method
       }
 
-      if(typeof config.data === 'string') {
-        try {
-          config.data = JSON.parse(config.data)
-        } catch(e) {
-          // skip
-        }
-      }
-      const {url = '/', method = 'get'} = config
-      const transformSet = this._saveCache(
-        url, method,
-        () => (this._getTransformSet(url, method)),
-      )
+      const {url, method} = config
+      const transformSet = this._getTransformSet(url, method)
       error.isError = true
       const _error: AxiosErrorEx = await transFormError<C>(
-        transformSet.error, error, this.context)
-      if(_error.isError) {
-        if(_error.retry) {
-          return Promise.resolve().then(() => {
-            // reset transform
-            _error.config.transformResponse = []
-            _error.config.transformRequest = []
-            return axios.request(_error.config)
-          })
-        }
-        return Promise.reject(_error)
+        transformSet.error, error, this.context, status)
+      if(_error.retry) {
+        return Promise.resolve().then(() => {
+          return axios.request(_error.config)
+        })
       }
       // @ts-ignore
-      return Promise.resolve(_error.response)
+      return Promise.reject(_error)
     }
   }
 
-  private _requestInterceptors() {
+  /**
+   * Return request interceptor
+   * @private
+   */
+  private _requestInterceptors():
+    ((config: AxiosRequestConfigEx) => Promise<AxiosRequestConfigEx>) {
     return async (config: AxiosRequestConfigEx) => {
       const {context} = this
-      const {__oldConfig} = config
-      let {url = '/', method = 'get'} = config
-      if(__oldConfig) {
-        url = __oldConfig.url
-        method = __oldConfig.method
-      }
+      const {url, method} = config
 
       // get transform
       const transformSet = this._getTransformSet(url, method)
-      const payloadConfig = {...config, __oldConfig: {...config}}
       // request
       const newConfig = await transFormRequest(
         transformSet.request,
-        payloadConfig,
+        {...config, __oldConfig: {...config}},
         context,
       )
 
       // response
-      newConfig.transformResponse = this._getResponseTransforms(payloadConfig)
+      newConfig.transformResponse = this._getResponseTransforms({...config})
       return newConfig
     }
   }
 
+  /**
+   * Manage match cache
+   * @param url
+   * @param method
+   * @param save
+   * @private
+   */
   private _saveCache(
     url: string,
     method: string,
@@ -219,7 +275,7 @@ export default class Transforms<C = any> {
    */
   private _getTransformSet(
     url: string = '/',
-    method: Method = 'get',
+    method: Method = 'all',
   ): TransformSetArray<C> {
     return this._saveCache(url, method, () => {
       const {matchers, final, first} = this
