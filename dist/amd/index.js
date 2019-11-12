@@ -321,6 +321,8 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             if (__oldConfig) {
                                 config.url = __oldConfig.url;
                                 config.method = __oldConfig.method;
+                                config.params = __oldConfig.params;
+                                config.data = __oldConfig.data;
                             }
                             url = config.url, method = config.method;
                             transformSet = this._getTransformSet(url, method);
