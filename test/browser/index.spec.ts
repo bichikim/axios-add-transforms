@@ -266,6 +266,56 @@ describe('lib/transforms', function test() {
       }
       expect(result).to.equal(undefined)
     })
+    it('should retry with changing', async function test() {
+      let _error = true
+      const {mock, axios} = newTest({
+        matchers: [
+          {
+            test: /^\/foo\/?/,
+            method: 'all',
+            transform: {
+              request: (payload) => {
+                if(payload.data.pass) {
+                  payload.url = '/bar'
+                }
+                return payload
+              },
+              error: (error) => {
+                _error = false
+                error.retry = true
+                return error
+              },
+              response: () => {
+                return {
+                  response: true,
+                }
+              },
+            },
+          },
+        ],
+      })
+
+      mock.onPost('/bar').reply((config) => {
+        let data
+        try {
+          data = JSON.parse(config.data)
+        } catch(e) {
+          data = config.data
+        }
+        if(!_error && data.pass) {
+          return [200]
+        }
+        return [401]
+      })
+      const result = await axios({
+        url: '/foo',
+        method: 'post',
+        data: {
+          pass: true,
+        },
+      })
+      expect(result.data.response).to.equal(true)
+    })
   })
 
   describe('get members', function test() {

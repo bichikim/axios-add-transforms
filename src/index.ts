@@ -207,6 +207,8 @@ export default class Transforms<C = any> {
       if(__oldConfig) {
         config.url = __oldConfig.url
         config.method = __oldConfig.method
+        config.params = __oldConfig.params
+        config.data = __oldConfig.data
       }
 
       const {url, method} = config
