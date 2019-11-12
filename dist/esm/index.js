@@ -50,11 +50,48 @@ export * from './utils';
 function _createCacheKey(url, method) {
     return method + ">" + url;
 }
+var StatusMapper = /** @class */ (function () {
+    function StatusMapper(creator) {
+        this._statusMap = new WeakMap();
+        this._creator = creator;
+    }
+    StatusMapper.prototype.getStatus = function (key) {
+        return this._statusMap.get(key);
+    };
+    StatusMapper.prototype.saveStatus = function (key, value) {
+        this._statusMap.set(key, value);
+    };
+    StatusMapper.prototype.createStatus = function (value) {
+        var key = this._creator();
+        this._statusMap.set(key, value);
+        return key;
+    };
+    StatusMapper.prototype.getStatusInMany = function (keys) {
+        if (Array.isArray(keys)) {
+            for (var _i = 0, keys_1 = keys; _i < keys_1.length; _i++) {
+                var key = keys_1[_i];
+                var value_1 = this.getStatus(key);
+                if (value_1) {
+                    return { key: key, value: value_1 };
+                }
+            }
+            return { key: undefined, value: undefined };
+        }
+        var value = this._statusMap.get(keys);
+        if (value) {
+            return { key: keys, value: value };
+        }
+        return { key: undefined, value: undefined };
+    };
+    return StatusMapper;
+}());
+export { StatusMapper };
 var Transforms = /** @class */ (function () {
     function Transforms(options) {
         if (options === void 0) { options = {}; }
         this._interceptorId = null;
         this._cache = new Map();
+        this._statusMap = new StatusMapper(function () { return function (data) { return (data); }; });
         this._options = __assign({}, options);
     }
     Object.defineProperty(Transforms.prototype, "first", {
@@ -101,11 +138,12 @@ var Transforms = /** @class */ (function () {
      */
     Transforms.prototype.ejectTransform = function (axios) {
         if (!this._interceptorId) {
-            return;
+            return false;
         }
         axios.interceptors.request.eject(this._interceptorId.request);
         axios.interceptors.response.eject(this._interceptorId.response);
         this._interceptorId = null;
+        return true;
     };
     /**
      * Apply transform
@@ -135,6 +173,11 @@ var Transforms = /** @class */ (function () {
         this.applyTransform(axios);
         return axios;
     };
+    /**
+     * Return AxiosTransformer form response
+     * @param config
+     * @private
+     */
     Transforms.prototype._getResponseTransforms = function (config) {
         var _a = this, margeResponse = _a.margeResponse, context = _a.context;
         var url = config.url, method = config.method;
@@ -153,89 +196,89 @@ var Transforms = /** @class */ (function () {
         var transformResponse = mergeArrays(responseTransforms);
         return transformResponse.map(function (transform) { return function (data) { return (transform(data, context, config)); }; });
     };
+    /**
+     * Return error interceptor
+     * @param axios axios instance
+     * @private
+     */
     Transforms.prototype._errorInterceptors = function (axios) {
         var _this = this;
         return function (error) { return __awaiter(_this, void 0, void 0, function () {
-            var config, __oldConfig, _a, url, _b, method, transformSet, _error;
-            var _this = this;
+            var config, _a, key, _b, status, saveStatusKey, __oldConfig, url, method, transformSet, _error;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         config = error.config;
-                        if (!error.config) {
+                        if (!config) {
                             throw error;
                         }
+                        _a = this._statusMap.getStatusInMany(config.transformRequest), key = _a.key, _b = _a.value, status = _b === void 0 ? {} : _b;
+                        saveStatusKey = key || this._statusMap.createStatus(status);
+                        config.transformResponse = [];
+                        config.transformRequest = [];
+                        config.transformRequest.push(saveStatusKey);
                         __oldConfig = config.__oldConfig;
                         if (__oldConfig) {
                             config.url = __oldConfig.url;
                             config.method = __oldConfig.method;
                         }
-                        if (typeof config.data === 'string') {
-                            try {
-                                config.data = JSON.parse(config.data);
-                            }
-                            catch (e) {
-                                // skip
-                            }
-                        }
-                        _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
-                        transformSet = this._saveCache(url, method, function () { return (_this._getTransformSet(url, method)); });
+                        url = config.url, method = config.method;
+                        transformSet = this._getTransformSet(url, method);
                         error.isError = true;
-                        return [4 /*yield*/, transFormError(transformSet.error, error, this.context)];
+                        return [4 /*yield*/, transFormError(transformSet.error, error, this.context, status)];
                     case 1:
                         _error = _c.sent();
-                        if (_error.isError) {
-                            if (_error.retry) {
-                                return [2 /*return*/, Promise.resolve().then(function () {
-                                        // reset transform
-                                        _error.config.transformResponse = [];
-                                        _error.config.transformRequest = [];
-                                        return axios.request(_error.config);
-                                    })];
-                            }
-                            return [2 /*return*/, Promise.reject(_error)];
+                        if (_error.retry) {
+                            return [2 /*return*/, Promise.resolve().then(function () {
+                                    return axios.request(_error.config);
+                                })];
                         }
                         // @ts-ignore
-                        return [2 /*return*/, Promise.resolve(_error.response)];
+                        return [2 /*return*/, Promise.reject(_error)];
                 }
             });
         }); };
     };
+    /**
+     * Return request interceptor
+     * @private
+     */
     Transforms.prototype._requestInterceptors = function () {
         var _this = this;
         return function (config) { return __awaiter(_this, void 0, void 0, function () {
-            var context, __oldConfig, _a, url, _b, method, transformSet, payloadConfig, newConfig;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var context, url, method, transformSet, newConfig;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         context = this.context;
-                        __oldConfig = config.__oldConfig;
-                        _a = config.url, url = _a === void 0 ? '/' : _a, _b = config.method, method = _b === void 0 ? 'get' : _b;
-                        if (__oldConfig) {
-                            url = __oldConfig.url;
-                            method = __oldConfig.method;
-                        }
+                        url = config.url, method = config.method;
                         transformSet = this._getTransformSet(url, method);
-                        payloadConfig = __assign(__assign({}, config), { __oldConfig: __assign({}, config) });
-                        return [4 /*yield*/, transFormRequest(transformSet.request, payloadConfig, context)
+                        return [4 /*yield*/, transFormRequest(transformSet.request, __assign(__assign({}, config), { __oldConfig: __assign({}, config) }), context)
                             // response
                         ];
                     case 1:
-                        newConfig = _c.sent();
+                        newConfig = _a.sent();
                         // response
-                        newConfig.transformResponse = this._getResponseTransforms(payloadConfig);
+                        newConfig.transformResponse = this._getResponseTransforms(__assign({}, config));
                         return [2 /*return*/, newConfig];
                 }
             });
         }); };
     };
+    /**
+     * Manage match cache
+     * @param url
+     * @param method
+     * @param save
+     * @private
+     */
     Transforms.prototype._saveCache = function (url, method, save) {
         var key = _createCacheKey(url, method);
         var value = this._cache.get(key);
         if (!value) {
-            var value_1 = save();
-            this._cache.set(key, value_1);
-            return value_1;
+            var value_2 = save();
+            this._cache.set(key, value_2);
+            return value_2;
         }
         return value;
     };
@@ -245,7 +288,7 @@ var Transforms = /** @class */ (function () {
     Transforms.prototype._getTransformSet = function (url, method) {
         var _this = this;
         if (url === void 0) { url = '/'; }
-        if (method === void 0) { method = 'get'; }
+        if (method === void 0) { method = 'all'; }
         return this._saveCache(url, method, function () {
             var _a = _this, matchers = _a.matchers, final = _a.final, first = _a.first;
             var matchedTransforms = getMatchedMatchers(matchers, url, method)

@@ -34,8 +34,8 @@ export function mergeArrays(items) {
 export function transFormRequest(transforms, config, context) {
     return forEachPromise(transforms, config, context);
 }
-export function transFormError(transforms, error, context) {
-    return forEachPromise(transforms, error, context);
+export function transFormError(transforms, error, context, status) {
+    return forEachPromise(transforms, error, context, status);
 }
 export function getMatchedMatchers(matchers, url, method) {
     if (url === void 0) { url = '/'; }
@@ -44,7 +44,7 @@ export function getMatchedMatchers(matchers, url, method) {
         var method = matcher.method, test = matcher.test;
         var matcherMethod = method && method.toUpperCase();
         var isMatchMethod = false;
-        if (matcher.method === 'ALL' || !method || !_method) {
+        if (matcherMethod === 'ALL' || !method || !_method) {
             isMatchMethod = true;
         }
         else {
@@ -68,5 +68,14 @@ export function margeMatcher(matchers) {
         response: [],
         error: [],
     });
+}
+export function onlyArray(value) {
+    if (!Array.isArray(value)) {
+        if (!value) {
+            return [];
+        }
+        return [value];
+    }
+    return value;
 }
 //# sourceMappingURL=utils.js.map
