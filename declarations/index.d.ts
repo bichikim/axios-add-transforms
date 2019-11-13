@@ -6,6 +6,7 @@ export declare class StatusMapper<K extends object, S> {
     private readonly _statusMap;
     private readonly _creator;
     constructor(creator: (() => K));
+    removeStatus(key: K): void;
     getStatus(key: K): S | undefined;
     saveStatus(key: K, value: S): void;
     createStatus(value: S): K;

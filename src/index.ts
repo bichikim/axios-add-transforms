@@ -31,11 +31,15 @@ function _createCacheKey(url: string, method: string): string {
 
 export class StatusMapper<K extends object, S> {
 
-  private readonly _statusMap: WeakMap<K, S> = new WeakMap()
+  private readonly _statusMap: Map<K, S> = new Map()
   private readonly _creator: () => K
 
   constructor(creator: (() => K)) {
     this._creator = creator
+  }
+
+  removeStatus(key: K) {
+    this._statusMap.delete(key)
   }
 
   getStatus(key: K): S | undefined {
@@ -208,18 +212,24 @@ export default class Transforms<C = any> {
         config.url = originalConfig.url
         config.method = originalConfig.method
         config.params = {...originalConfig.params}
-        config.data = onlyKeyObject(originalConfig.data)
+        config.data = {...originalConfig.data}
         config.headers = {...originalConfig.headers}
       }
 
-      const {url, method} = originalConfig
+      const {url, method} = config
       const transformSet = this._getTransformSet(url, method)
       error.isError = true
       const _error: AxiosErrorEx = await transFormError<C>(
         transformSet.error, error, this.context, status)
       if(_error.retry) {
         return Promise.resolve().then(() => {
-          return axios.request(_error.config)
+          const {
+            url, data, headers, baseURL, method, params, transformRequest,
+            transformResponse,
+          } = _error.config
+          return axios({
+            url, data, headers, baseURL, method, params, transformRequest, transformResponse,
+          })
         })
       }
       // @ts-ignore
@@ -253,6 +263,8 @@ export default class Transforms<C = any> {
         {...config},
         context,
       )
+
+      console.log('new config', newConfig)
 
       // response
       newConfig.transformResponse = this._getResponseTransforms({...config})

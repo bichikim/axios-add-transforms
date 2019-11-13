@@ -162,9 +162,12 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
     }
     var StatusMapper = /** @class */ (function () {
         function StatusMapper(creator) {
-            this._statusMap = new WeakMap();
+            this._statusMap = new Map();
             this._creator = creator;
         }
+        StatusMapper.prototype.removeStatus = function (key) {
+            this._statusMap.delete(key);
+        };
         StatusMapper.prototype.getStatus = function (key) {
             return this._statusMap.get(key);
         };
@@ -331,10 +334,10 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                                 config.url = originalConfig.url;
                                 config.method = originalConfig.method;
                                 config.params = __assign({}, originalConfig.params);
-                                config.data = utils_1.onlyKeyObject(originalConfig.data);
+                                config.data = __assign({}, originalConfig.data);
                                 config.headers = __assign({}, originalConfig.headers);
                             }
-                            url = originalConfig.url, method = originalConfig.method;
+                            url = config.url, method = config.method;
                             transformSet = this._getTransformSet(url, method);
                             error.isError = true;
                             return [4 /*yield*/, utils_1.transFormError(transformSet.error, error, this.context, status)];
@@ -342,7 +345,10 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             _error = _d.sent();
                             if (_error.retry) {
                                 return [2 /*return*/, Promise.resolve().then(function () {
-                                        return axios.request(_error.config);
+                                        var _a = _error.config, url = _a.url, data = _a.data, headers = _a.headers, baseURL = _a.baseURL, method = _a.method, params = _a.params, transformRequest = _a.transformRequest, transformResponse = _a.transformResponse;
+                                        return axios({
+                                            url: url, data: data, headers: headers, baseURL: baseURL, method: method, params: params, transformRequest: transformRequest, transformResponse: transformResponse,
+                                        });
                                     })];
                             }
                             // @ts-ignore
@@ -371,11 +377,10 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             config.transformRequest = utils_1.onlyArray(config.transformRequest);
                             config.transformRequest.push(saveStatusKey);
                             transformSet = this._getTransformSet(url, method);
-                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, config), context)
-                                // response
-                            ];
+                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, config), context)];
                         case 1:
                             newConfig = _c.sent();
+                            console.log('new config', newConfig);
                             // response
                             newConfig.transformResponse = this._getResponseTransforms(__assign({}, config));
                             return [2 /*return*/, newConfig];
