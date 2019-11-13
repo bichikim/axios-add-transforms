@@ -267,10 +267,11 @@ var Transforms = /** @class */ (function () {
                         config.transformRequest = onlyArray(config.transformRequest);
                         config.transformRequest.push(saveStatusKey);
                         transformSet = this._getTransformSet(url, method);
-                        return [4 /*yield*/, transFormRequest(transformSet.request, __assign({}, config), context)];
+                        return [4 /*yield*/, transFormRequest(transformSet.request, __assign({}, config), context)
+                            // response
+                        ];
                     case 1:
                         newConfig = _c.sent();
-                        console.log('new config', newConfig);
                         // response
                         newConfig.transformResponse = this._getResponseTransforms(__assign({}, config));
                         return [2 /*return*/, newConfig];

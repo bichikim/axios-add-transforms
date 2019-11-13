@@ -377,10 +377,11 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             config.transformRequest = utils_1.onlyArray(config.transformRequest);
                             config.transformRequest.push(saveStatusKey);
                             transformSet = this._getTransformSet(url, method);
-                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, config), context)];
+                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, config), context)
+                                // response
+                            ];
                         case 1:
                             newConfig = _c.sent();
-                            console.log('new config', newConfig);
                             // response
                             newConfig.transformResponse = this._getResponseTransforms(__assign({}, config));
                             return [2 /*return*/, newConfig];
