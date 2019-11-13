@@ -263,8 +263,6 @@ export default class Transforms<C = any> {
         context,
       )
 
-      console.log('new config', newConfig)
-
       // response
       newConfig.transformResponse = this._getResponseTransforms({...config})
       return newConfig
