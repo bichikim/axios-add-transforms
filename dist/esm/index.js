@@ -235,9 +235,9 @@ var Transforms = /** @class */ (function () {
                         _error = _d.sent();
                         if (_error.retry) {
                             return [2 /*return*/, Promise.resolve().then(function () {
-                                    var _a = _error.config, url = _a.url, data = _a.data, headers = _a.headers, baseURL = _a.baseURL, method = _a.method, params = _a.params, transformRequest = _a.transformRequest, transformResponse = _a.transformResponse;
+                                    var _a = _error.config, url = _a.url, data = _a.data, headers = _a.headers, baseURL = _a.baseURL, method = _a.method, params = _a.params;
                                     return axios({
-                                        url: url, data: data, headers: headers, baseURL: baseURL, method: method, params: params, transformRequest: transformRequest, transformResponse: transformResponse,
+                                        url: url, data: data, headers: headers, baseURL: baseURL, method: method, params: params,
                                     });
                                 })];
                         }

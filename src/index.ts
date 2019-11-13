@@ -224,11 +224,10 @@ export default class Transforms<C = any> {
       if(_error.retry) {
         return Promise.resolve().then(() => {
           const {
-            url, data, headers, baseURL, method, params, transformRequest,
-            transformResponse,
+            url, data, headers, baseURL, method, params,
           } = _error.config
           return axios({
-            url, data, headers, baseURL, method, params, transformRequest, transformResponse,
+            url, data, headers, baseURL, method, params,
           })
         })
       }
