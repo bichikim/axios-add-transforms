@@ -304,32 +304,32 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
         Transforms.prototype._errorInterceptors = function (axios) {
             var _this = this;
             return function (error) { return __awaiter(_this, void 0, void 0, function () {
-                var config, _a, key, _b, status, saveStatusKey, __oldConfig, url, method, transformSet, _error;
-                return __generator(this, function (_c) {
-                    switch (_c.label) {
+                var config, _a, key, _b, status, _c, originalConfig, url, method, transformSet, _error;
+                return __generator(this, function (_d) {
+                    switch (_d.label) {
                         case 0:
                             config = error.config;
                             if (!config) {
                                 throw error;
                             }
                             _a = this._statusMap.getStatusInMany(config.transformRequest), key = _a.key, _b = _a.value, status = _b === void 0 ? {} : _b;
-                            saveStatusKey = key || this._statusMap.createStatus(status);
                             config.transformResponse = [];
                             config.transformRequest = [];
-                            config.transformRequest.push(saveStatusKey);
-                            __oldConfig = config.__oldConfig;
-                            if (__oldConfig) {
-                                config.url = __oldConfig.url;
-                                config.method = __oldConfig.method;
-                                config.params = __oldConfig.params;
-                                config.data = __oldConfig.data;
+                            config.transformRequest.push(key);
+                            _c = status.originalConfig, originalConfig = _c === void 0 ? config : _c;
+                            if (originalConfig) {
+                                config.url = originalConfig.url;
+                                config.method = originalConfig.method;
+                                config.params = __assign({}, originalConfig.params);
+                                config.data = __assign({}, originalConfig.data);
+                                config.headers = __assign({}, originalConfig.headers);
                             }
-                            url = config.url, method = config.method;
+                            url = originalConfig.url, method = originalConfig.method;
                             transformSet = this._getTransformSet(url, method);
                             error.isError = true;
                             return [4 /*yield*/, utils_1.transFormError(transformSet.error, error, this.context, status)];
                         case 1:
-                            _error = _c.sent();
+                            _error = _d.sent();
                             if (_error.retry) {
                                 return [2 /*return*/, Promise.resolve().then(function () {
                                         return axios.request(_error.config);
@@ -348,18 +348,24 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
         Transforms.prototype._requestInterceptors = function () {
             var _this = this;
             return function (config) { return __awaiter(_this, void 0, void 0, function () {
-                var context, url, method, transformSet, newConfig;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                var context, url, method, _a, key, _b, status, saveStatusKey, transformSet, newConfig;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
                         case 0:
                             context = this.context;
                             url = config.url, method = config.method;
+                            _a = this._statusMap.getStatusInMany(config.transformRequest), key = _a.key, _b = _a.value, status = _b === void 0 ? {
+                                originalConfig: __assign({}, config),
+                            } : _b;
+                            saveStatusKey = key || this._statusMap.createStatus(status);
+                            config.transformRequest = utils_1.onlyArray(config.transformRequest);
+                            config.transformRequest.push(saveStatusKey);
                             transformSet = this._getTransformSet(url, method);
-                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign(__assign({}, config), { __oldConfig: __assign({}, config) }), context)
+                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, config), context)
                                 // response
                             ];
                         case 1:
-                            newConfig = _a.sent();
+                            newConfig = _c.sent();
                             // response
                             newConfig.transformResponse = this._getResponseTransforms(__assign({}, config));
                             return [2 /*return*/, newConfig];

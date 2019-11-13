@@ -93,4 +93,3 @@ export interface TransformsOptions<C = any> {
   margeResponse?: MargeResponse
   context?: () => C
 }
-

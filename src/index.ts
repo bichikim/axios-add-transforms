@@ -19,6 +19,7 @@ import {
   mergeArrays,
   transFormError,
   transFormRequest,
+  onlyArray,
 } from './utils'
 
 export * from './types'
@@ -197,21 +198,21 @@ export default class Transforms<C = any> {
       }
 
       const {key, value: status = {}} = this._statusMap.getStatusInMany(config.transformRequest)
-      const saveStatusKey = key || this._statusMap.createStatus(status)
       config.transformResponse = []
       config.transformRequest = []
-      config.transformRequest.push(saveStatusKey)
+      config.transformRequest.push(key)
 
-      const {__oldConfig} = config
+      const {originalConfig = config} = status
 
-      if(__oldConfig) {
-        config.url = __oldConfig.url
-        config.method = __oldConfig.method
-        config.params = __oldConfig.params
-        config.data = __oldConfig.data
+      if(originalConfig) {
+        config.url = originalConfig.url
+        config.method = originalConfig.method
+        config.params = {...originalConfig.params}
+        config.data = {...originalConfig.data}
+        config.headers = {...originalConfig.headers}
       }
 
-      const {url, method} = config
+      const {url, method} = originalConfig
       const transformSet = this._getTransformSet(url, method)
       error.isError = true
       const _error: AxiosErrorEx = await transFormError<C>(
@@ -235,13 +236,19 @@ export default class Transforms<C = any> {
     return async (config: AxiosRequestConfigEx) => {
       const {context} = this
       const {url, method} = config
+      const {key, value: status = {
+        originalConfig: {...config},
+      }} = this._statusMap.getStatusInMany(config.transformRequest)
+      const saveStatusKey = key || this._statusMap.createStatus(status)
+      config.transformRequest = onlyArray(config.transformRequest)
+      config.transformRequest.push(saveStatusKey)
 
       // get transform
       const transformSet = this._getTransformSet(url, method)
       // request
       const newConfig = await transFormRequest(
         transformSet.request,
-        {...config, __oldConfig: {...config}},
+        {...config},
         context,
       )
 
