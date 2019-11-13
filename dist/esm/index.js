@@ -45,7 +45,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import { getMatchedMatchers, margeMatcher, mergeArrays, transFormError, transFormRequest, onlyArray, } from './utils';
+import { getMatchedMatchers, margeMatcher, mergeArrays, onlyArray, onlyKeyObject, transFormError, transFormRequest, } from './utils';
 export * from './utils';
 function _createCacheKey(url, method) {
     return method + ">" + url;
@@ -221,7 +221,7 @@ var Transforms = /** @class */ (function () {
                             config.url = originalConfig.url;
                             config.method = originalConfig.method;
                             config.params = __assign({}, originalConfig.params);
-                            config.data = __assign({}, originalConfig.data);
+                            config.data = onlyKeyObject(originalConfig.data);
                             config.headers = __assign({}, originalConfig.headers);
                         }
                         url = originalConfig.url, method = originalConfig.method;

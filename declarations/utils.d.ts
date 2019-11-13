@@ -7,3 +7,6 @@ export declare function transFormError<C>(transforms: Array<TransformError<C>>, 
 export declare function getMatchedMatchers(matchers: Matcher[], url?: string, method?: Method): Matcher<any>[];
 export declare function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C>;
 export declare function onlyArray(value: any | any[]): any[];
+export declare function onlyKeyObject(value: {
+    [key: string]: any;
+} | undefined): {} | undefined;

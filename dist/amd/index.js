@@ -139,6 +139,16 @@ define("utils", ["require", "exports"], function (require, exports) {
         return value;
     }
     exports.onlyArray = onlyArray;
+    function onlyKeyObject(value) {
+        if (!value) {
+            return value;
+        }
+        return Object.keys(value).reduce(function (result, key) {
+            result[key] = value[key];
+            return result;
+        }, {});
+    }
+    exports.onlyKeyObject = onlyKeyObject;
 });
 define("index", ["require", "exports", "utils", "utils"], function (require, exports, utils_1, utils_2) {
     "use strict";
@@ -321,7 +331,7 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                                 config.url = originalConfig.url;
                                 config.method = originalConfig.method;
                                 config.params = __assign({}, originalConfig.params);
-                                config.data = __assign({}, originalConfig.data);
+                                config.data = utils_1.onlyKeyObject(originalConfig.data);
                                 config.headers = __assign({}, originalConfig.headers);
                             }
                             url = originalConfig.url, method = originalConfig.method;

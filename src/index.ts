@@ -17,9 +17,9 @@ import {
   getMatchedMatchers,
   margeMatcher,
   mergeArrays,
+  onlyArray, onlyKeyObject,
   transFormError,
   transFormRequest,
-  onlyArray,
 } from './utils'
 
 export * from './types'
@@ -54,19 +54,19 @@ export class StatusMapper<K extends object, S> {
 
   getStatusInMany(keys: any[] | any) {
     if(Array.isArray(keys)) {
-     for(const key of keys) {
-       const value = this.getStatus(key)
-       if(value) {
-         return {key, value}
-       }
-     }
-     return {key: undefined, value: undefined}
+      for(const key of keys) {
+        const value = this.getStatus(key)
+        if(value) {
+          return {key, value}
+        }
+      }
+      return {key: undefined, value: undefined}
     }
     const value = this._statusMap.get(keys)
     if(value) {
       return {key: keys, value}
     }
-    return  {key: undefined, value: undefined}
+    return {key: undefined, value: undefined}
   }
 }
 
@@ -208,7 +208,7 @@ export default class Transforms<C = any> {
         config.url = originalConfig.url
         config.method = originalConfig.method
         config.params = {...originalConfig.params}
-        config.data = {...originalConfig.data}
+        config.data = onlyKeyObject(originalConfig.data)
         config.headers = {...originalConfig.headers}
       }
 
@@ -236,9 +236,11 @@ export default class Transforms<C = any> {
     return async (config: AxiosRequestConfigEx) => {
       const {context} = this
       const {url, method} = config
-      const {key, value: status = {
-        originalConfig: {...config},
-      }} = this._statusMap.getStatusInMany(config.transformRequest)
+      const {
+        key, value: status = {
+          originalConfig: {...config},
+        },
+      } = this._statusMap.getStatusInMany(config.transformRequest)
       const saveStatusKey = key || this._statusMap.createStatus(status)
       config.transformRequest = onlyArray(config.transformRequest)
       config.transformRequest.push(saveStatusKey)
