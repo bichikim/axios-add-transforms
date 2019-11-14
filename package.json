@@ -1,6 +1,6 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/amd/index.js",
@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/bichikim/axios-add-transforms#readme",
   "dependencies": {
-    "axios": "0.17.1"
+    "axios": "~0.17.1"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
