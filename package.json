@@ -1,6 +1,6 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/amd/index.js",
@@ -83,6 +83,7 @@
     "tsconfig-paths": "^3.8.0",
     "tsconfig-paths-webpack-plugin": "^3.2.0",
     "tslint": "^5.18.0",
+    "typedoc": "^0.15.1",
     "typescript": "^3.7.2",
     "typescript-eslint-parser": "^22.0.0",
     "universal-cookie": "^4.0.0",
