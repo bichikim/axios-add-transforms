@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/bichikim/axios-add-transforms#readme",
   "dependencies": {
-    "axios": "~0.17.1"
+    "axios": "~0.18.1"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
