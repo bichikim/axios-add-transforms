@@ -52,12 +52,9 @@ function _createCacheKey(url, method) {
 }
 var StatusMapper = /** @class */ (function () {
     function StatusMapper(creator) {
-        this._statusMap = new Map();
+        this._statusMap = new WeakMap();
         this._creator = creator;
     }
-    StatusMapper.prototype.removeStatus = function (key) {
-        this._statusMap.delete(key);
-    };
     StatusMapper.prototype.getStatus = function (key) {
         return this._statusMap.get(key);
     };
@@ -94,7 +91,7 @@ var Transforms = /** @class */ (function () {
         if (options === void 0) { options = {}; }
         this._interceptorId = null;
         this._cache = new Map();
-        this._statusMap = new StatusMapper(function () { return function (data) { return (data); }; });
+        this._statusMap = new StatusMapper(function () { return function (config) { return (config); }; });
         this._options = __assign({}, options);
     }
     Object.defineProperty(Transforms.prototype, "first", {
@@ -220,12 +217,14 @@ var Transforms = /** @class */ (function () {
                         config.transformRequest = [];
                         config.transformRequest.push(key);
                         _c = status.originalConfig, originalConfig = _c === void 0 ? config : _c;
+                        /* istanbul ignore else no way to enter else*/
                         if (originalConfig) {
                             config.url = originalConfig.url;
                             config.method = originalConfig.method;
                             config.params = __assign({}, originalConfig.params);
                             config.data = __assign({}, originalConfig.data);
                             config.headers = __assign({}, originalConfig.headers);
+                            config.info = __assign({}, originalConfig.info);
                         }
                         url = config.url, method = config.method;
                         transformSet = this._getTransformSet(url, method);

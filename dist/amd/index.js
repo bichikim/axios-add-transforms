@@ -139,16 +139,6 @@ define("utils", ["require", "exports"], function (require, exports) {
         return value;
     }
     exports.onlyArray = onlyArray;
-    function onlyKeyObject(value) {
-        if (!value) {
-            return value;
-        }
-        return Object.keys(value).reduce(function (result, key) {
-            result[key] = value[key];
-            return result;
-        }, {});
-    }
-    exports.onlyKeyObject = onlyKeyObject;
 });
 define("index", ["require", "exports", "utils", "utils"], function (require, exports, utils_1, utils_2) {
     "use strict";
@@ -162,12 +152,9 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
     }
     var StatusMapper = /** @class */ (function () {
         function StatusMapper(creator) {
-            this._statusMap = new Map();
+            this._statusMap = new WeakMap();
             this._creator = creator;
         }
-        StatusMapper.prototype.removeStatus = function (key) {
-            this._statusMap.delete(key);
-        };
         StatusMapper.prototype.getStatus = function (key) {
             return this._statusMap.get(key);
         };
@@ -204,7 +191,7 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
             if (options === void 0) { options = {}; }
             this._interceptorId = null;
             this._cache = new Map();
-            this._statusMap = new StatusMapper(function () { return function (data) { return (data); }; });
+            this._statusMap = new StatusMapper(function () { return function (config) { return (config); }; });
             this._options = __assign({}, options);
         }
         Object.defineProperty(Transforms.prototype, "first", {
@@ -330,12 +317,14 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             config.transformRequest = [];
                             config.transformRequest.push(key);
                             _c = status.originalConfig, originalConfig = _c === void 0 ? config : _c;
+                            /* istanbul ignore else no way to enter else*/
                             if (originalConfig) {
                                 config.url = originalConfig.url;
                                 config.method = originalConfig.method;
                                 config.params = __assign({}, originalConfig.params);
                                 config.data = __assign({}, originalConfig.data);
                                 config.headers = __assign({}, originalConfig.headers);
+                                config.info = __assign({}, originalConfig.info);
                             }
                             url = config.url, method = config.method;
                             transformSet = this._getTransformSet(url, method);

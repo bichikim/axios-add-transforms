@@ -14,7 +14,7 @@ const newTest = (options: TransformsOptions) => {
 
 describe('lib/transforms', function test() {
 
-  describe('applyTransform', function test() {
+  describe('request & response', function test() {
     it('should run', async function test() {
       const testTransform = (identifier) => ({
         request: (config, context) => {
@@ -164,6 +164,60 @@ describe('lib/transforms', function test() {
       expect(data.response).to.equal(1)
       expect(pass).to.equal(1)
     })
+
+    it('should run with empty request', async function test() {
+      const {axios, mock} = newTest({
+        matchers: [
+          {
+            test: /^\/?$/,
+            transform: {
+              request: [(config) => {
+                config.url = '/foo'
+                return config
+              }],
+            },
+          },
+        ],
+      })
+      mock.onGet('/foo').reply(200)
+      const result = await axios({})
+      expect(result).to.be.a('object')
+    })
+
+    // it('should keep info', async function test() {
+    //   const {axios, mock} = newTest({
+    //     matchers: [
+    //       {
+    //         test: /^\/foo\/?$/,
+    //         transform: {
+    //           request: [(config) => {
+    //             config.data = {
+    //               foo: config.info.foo,
+    //             }
+    //             return config
+    //           }],
+    //         },
+    //       },
+    //     ],
+    //   })
+    //
+    //   mock.onPost('/foo').reply((config) => {
+    //     let data
+    //     try {
+    //       data = JSON.parse(config.data)
+    //     } catch(e) {
+    //       data = config.data
+    //     }
+    //     if(data && data.foo) {
+    //       return [200, {}]
+    //     }
+    //     return [401]
+    //   })
+    //   const result = await axios({
+    //     info: {foo: true},
+    //   })
+    //   expect(result).to.be.a('object')
+    // })
   })
 
   describe('error', function test() {

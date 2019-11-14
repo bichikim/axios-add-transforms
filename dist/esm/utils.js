@@ -78,13 +78,4 @@ export function onlyArray(value) {
     }
     return value;
 }
-export function onlyKeyObject(value) {
-    if (!value) {
-        return value;
-    }
-    return Object.keys(value).reduce(function (result, key) {
-        result[key] = value[key];
-        return result;
-    }, {});
-}
 //# sourceMappingURL=utils.js.map

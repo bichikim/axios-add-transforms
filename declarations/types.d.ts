@@ -6,7 +6,7 @@ export interface AxiosErrorEx extends AxiosError {
     config: AxiosRequestConfigEx;
 }
 export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-    __oldConfig?: any;
+    info?: any;
 }
 export interface InterceptorIds {
     request: number;
@@ -15,7 +15,7 @@ export interface InterceptorIds {
 export declare type MargeResponse = 'back' | 'front' | 'none';
 export interface TransFormerStatus {
     retry?: number;
-    originalConfig?: AxiosRequestConfig;
+    originalConfig?: AxiosRequestConfigEx;
 }
 export declare type StatusKeyFunction = (data: any) => any;
 /**
@@ -26,7 +26,7 @@ export declare type Transformer<C = any> = TransformerRequest<C>;
 /**
  * Request Transformer function
  */
-export declare type TransformerRequest<C = any> = (payload: AxiosRequestConfig, context: C) => Promise<AxiosRequestConfig> | AxiosRequestConfig;
+export declare type TransformerRequest<C = any> = (payload: AxiosRequestConfigEx, context: C) => Promise<AxiosRequestConfigEx> | AxiosRequestConfigEx;
 /**
  * Response Transformer function
  */

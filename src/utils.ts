@@ -92,13 +92,3 @@ export function onlyArray(value: any | any[]) {
   }
   return value
 }
-
-export function onlyKeyObject(value: {[key: string]: any} | undefined) {
-  if(!value) {
-    return value
-  }
-  return Object.keys(value).reduce((result, key: string) => {
-    result[key] = value[key]
-    return result
-  }, {})
-}

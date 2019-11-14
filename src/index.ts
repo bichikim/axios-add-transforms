@@ -17,7 +17,7 @@ import {
   getMatchedMatchers,
   margeMatcher,
   mergeArrays,
-  onlyArray, onlyKeyObject,
+  onlyArray,
   transFormError,
   transFormRequest,
 } from './utils'
@@ -25,21 +25,28 @@ import {
 export * from './types'
 export * from './utils'
 
+// override axios type
+declare module 'axios/index' {
+  // override axios AxiosRequestConfig
+  export interface AxiosRequestConfig {
+    /**
+     * info for transformer
+     */
+    info?: any
+  }
+}
+
 function _createCacheKey(url: string, method: string): string {
   return `${method}>${url}`
 }
 
 export class StatusMapper<K extends object, S> {
 
-  private readonly _statusMap: Map<K, S> = new Map()
+  private readonly _statusMap: WeakMap<K, S> = new WeakMap()
   private readonly _creator: () => K
 
   constructor(creator: (() => K)) {
     this._creator = creator
-  }
-
-  removeStatus(key: K) {
-    this._statusMap.delete(key)
   }
 
   getStatus(key: K): S | undefined {
@@ -80,7 +87,7 @@ export default class Transforms<C = any> {
   private _interceptorId: InterceptorIds | null = null
   private readonly _cache: Map<string, TransformSetArray<C>> = new Map()
   private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
-    = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (data) => (data))
+    = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (config) => (config))
 
   get first(): TransformSet<C> | undefined {
     return this._options.first
@@ -208,12 +215,14 @@ export default class Transforms<C = any> {
 
       const {originalConfig = config} = status
 
+      /* istanbul ignore else no way to enter else*/
       if(originalConfig) {
         config.url = originalConfig.url
         config.method = originalConfig.method
         config.params = {...originalConfig.params}
         config.data = {...originalConfig.data}
         config.headers = {...originalConfig.headers}
+        config.info = {...originalConfig.info}
       }
 
       const {url, method} = config
