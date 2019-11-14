@@ -24,9 +24,7 @@ export function forEachPromise(items, value: any, ...args: any[]) {
   }, Promise.resolve(value))
 }
 
-export function mergeArrays<T = any>(
-  items: Array<T | T[] | object | undefined | null>,
-): T[] {
+export function mergeArrays<T = any>(items: Array<T | T[] | object | undefined | null>): T[] {
   return items.reduce<any[]>((result: any[], item: any) => {
     if(Array.isArray(item)) {
       result.push(...item)

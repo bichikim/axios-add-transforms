@@ -27,10 +27,10 @@ export * from './utils'
 export default class Transforms<C = any> {
 
   private readonly _options: TransformsOptions
+
   private _interceptorId: InterceptorIds | null = null
+
   private readonly _cache: Map<string, TransformSetArray<C>> = new Map()
-  // private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
-  //   = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (config) => (config))
 
   get first(): TransformSet<C> | undefined {
     return this._options.first
@@ -104,9 +104,7 @@ export default class Transforms<C = any> {
    * Add Interceptors for response & request transforms
    * @deprecated
    */
-  addInterceptors(
-    axios: AxiosInstance,
-  ) {
+  addInterceptors(axios: AxiosInstance) {
     this.applyTransform(axios)
     return axios
   }
@@ -116,8 +114,7 @@ export default class Transforms<C = any> {
    * @param config
    * @private
    */
-  private _getResponseTransforms(config: AxiosRequestConfig):
-    AxiosTransformer[] {
+  private _getResponseTransforms(config: AxiosRequestConfig): AxiosTransformer[] {
     const {margeResponse, context} = this
     const {url, method} = config
     const transformSet = this._getTransformSet(url, method)
@@ -221,7 +218,8 @@ export default class Transforms<C = any> {
   private _saveCache(
     url: string,
     method: string,
-    save: (() => TransformSetArray<C>)): TransformSetArray<C> {
+    save: (() => TransformSetArray<C>),
+  ): TransformSetArray<C> {
     const key = createCacheKey(url, method)
     const value = this._cache.get(key)
     if(!value) {

@@ -164,8 +164,6 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
             this._options = __assign({}, options);
         }
         Object.defineProperty(Transforms.prototype, "first", {
-            // private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
-            //   = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (config) => (config))
             get: function () {
                 return this._options.first;
             },
