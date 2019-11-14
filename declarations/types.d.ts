@@ -6,7 +6,6 @@ export interface AxiosErrorEx extends AxiosError {
     config: AxiosRequestConfigEx;
 }
 export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-    info?: any;
 }
 export interface InterceptorIds {
     request: number;

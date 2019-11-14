@@ -1,4 +1,4 @@
-import Transforms, {StatusMapper, TransformsOptions} from '@/index'
+import Transforms, {TransformsOptions} from '@/index'
 import Axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 
@@ -184,40 +184,42 @@ describe('lib/transforms', function test() {
       expect(result).to.be.a('object')
     })
 
-    // it('should keep info', async function test() {
-    //   const {axios, mock} = newTest({
-    //     matchers: [
-    //       {
-    //         test: /^\/foo\/?$/,
-    //         transform: {
-    //           request: [(config) => {
-    //             config.data = {
-    //               foo: config.info.foo,
-    //             }
-    //             return config
-    //           }],
-    //         },
-    //       },
-    //     ],
-    //   })
-    //
-    //   mock.onPost('/foo').reply((config) => {
-    //     let data
-    //     try {
-    //       data = JSON.parse(config.data)
-    //     } catch(e) {
-    //       data = config.data
-    //     }
-    //     if(data && data.foo) {
-    //       return [200, {}]
-    //     }
-    //     return [401]
-    //   })
-    //   const result = await axios({
-    //     info: {foo: true},
-    //   })
-    //   expect(result).to.be.a('object')
-    // })
+    it('should keep info', async function test() {
+      const {axios, mock} = newTest({
+        matchers: [
+          {
+            test: /^\/foo\/?$/,
+            transform: {
+              request: [(config) => {
+                config.data = {
+                  foo: config.info.foo,
+                }
+                return config
+              }],
+            },
+          },
+        ],
+      })
+
+      mock.onPost('/foo').reply((config) => {
+        let data
+        try {
+          data = JSON.parse(config.data)
+        } catch(e) {
+          data = config.data
+        }
+        if(data && data.foo) {
+          return [200, {}]
+        }
+        return [401]
+      })
+      const result = await axios({
+        url: '/foo',
+        method: 'post',
+        info: {foo: true},
+      })
+      expect(result).to.be.a('object')
+    })
   })
 
   describe('error', function test() {
@@ -252,7 +254,7 @@ describe('lib/transforms', function test() {
       try {
         result = await axios({url: '/foo', method: 'post'})
       } catch(e) {
-        expect(e).to.be.a('function')
+        expect(e).to.instanceOf(Error)
       }
 
       expect(result).to.equal(undefined)
@@ -438,33 +440,6 @@ describe('lib/transforms', function test() {
       expect(_axios).to.equal(myAxios)
       expect(request.handlers[0]).to.be.an('object')
       expect(response.handlers[0]).to.be.an('object')
-    })
-  })
-
-  describe('StatusMapper', function test() {
-    it('should saveStatus', function test() {
-      const status = new StatusMapper(() => (data) => (data))
-      const data = {}
-      const data2 = {}
-      const key = status.createStatus(data)
-      expect(status.getStatus(key)).to.equal(data)
-      status.saveStatus(key, data2)
-      expect(status.getStatus(key)).to.equal(data2)
-    })
-    it('should get status in Many', function test() {
-      const status = new StatusMapper(() => (data) => (data))
-      const data = {}
-      const key = status.createStatus(data)
-      {
-        const {key: _key, value} = status.getStatusInMany(key)
-        expect(value).to.equal(data)
-        expect(_key).to.equal(key)
-      }
-      {
-        const {key: _key, value} = status.getStatusInMany((data) => (data))
-        expect(value).to.equal(undefined)
-        expect(_key).to.equal(undefined)
-      }
     })
   })
 })

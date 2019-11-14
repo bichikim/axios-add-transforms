@@ -40,54 +40,54 @@ function _createCacheKey(url: string, method: string): string {
   return `${method}>${url}`
 }
 
-export class StatusMapper<K extends object, S> {
-
-  private readonly _statusMap: WeakMap<K, S> = new WeakMap()
-  private readonly _creator: () => K
-
-  constructor(creator: (() => K)) {
-    this._creator = creator
-  }
-
-  getStatus(key: K): S | undefined {
-    return this._statusMap.get(key)
-  }
-
-  saveStatus(key: K, value: S) {
-    this._statusMap.set(key, value)
-  }
-
-  createStatus(value: S): K {
-    const key = this._creator()
-    this._statusMap.set(key, value)
-    return key
-  }
-
-  getStatusInMany(keys: any[] | any) {
-    if(Array.isArray(keys)) {
-      for(const key of keys) {
-        const value = this.getStatus(key)
-        if(value) {
-          return {key, value}
-        }
-      }
-      return {key: undefined, value: undefined}
-    }
-    const value = this._statusMap.get(keys)
-    if(value) {
-      return {key: keys, value}
-    }
-    return {key: undefined, value: undefined}
-  }
-}
+// export class StatusMapper<K extends object, S> {
+//
+//   private readonly _statusMap: WeakMap<K, S> = new WeakMap()
+//   private readonly _creator: () => K
+//
+//   constructor(creator: (() => K)) {
+//     this._creator = creator
+//   }
+//
+//   getStatus(key: K): S | undefined {
+//     return this._statusMap.get(key)
+//   }
+//
+//   saveStatus(key: K, value: S) {
+//     this._statusMap.set(key, value)
+//   }
+//
+//   createStatus(value: S): K {
+//     const key = this._creator()
+//     this._statusMap.set(key, value)
+//     return key
+//   }
+//
+//   getStatusInMany(keys: any[] | any) {
+//     if(Array.isArray(keys)) {
+//       for(const key of keys) {
+//         const value = this.getStatus(key)
+//         if(value) {
+//           return {key, value}
+//         }
+//       }
+//       return {key: undefined, value: undefined}
+//     }
+//     const value = this._statusMap.get(keys)
+//     if(value) {
+//       return {key: keys, value}
+//     }
+//     return {key: undefined, value: undefined}
+//   }
+// }
 
 export default class Transforms<C = any> {
 
   private readonly _options: TransformsOptions
   private _interceptorId: InterceptorIds | null = null
   private readonly _cache: Map<string, TransformSetArray<C>> = new Map()
-  private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
-    = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (config) => (config))
+  // private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
+  //   = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (config) => (config))
 
   get first(): TransformSet<C> | undefined {
     return this._options.first
@@ -204,40 +204,25 @@ export default class Transforms<C = any> {
     ((error: AxiosErrorEx) => Promise<AxiosErrorEx | any>) {
     return async (error: AxiosErrorEx) => {
       const {config} = error
-      if(!config) {
+      const originalConfig = config.__config
+      if(!config || !originalConfig) {
         throw error
       }
 
-      const {key, value: status = {}} = this._statusMap.getStatusInMany(config.transformRequest)
-      config.transformResponse = []
-      config.transformRequest = []
-      config.transformRequest.push(key)
-
-      const {originalConfig = config} = status
-
-      /* istanbul ignore else no way to enter else*/
-      if(originalConfig) {
-        config.url = originalConfig.url
-        config.method = originalConfig.method
-        config.params = {...originalConfig.params}
-        config.data = {...originalConfig.data}
-        config.headers = {...originalConfig.headers}
-        config.info = {...originalConfig.info}
+      let status = config.__status
+      if(!status) {
+        status = {}
+        config.__status = status
       }
 
-      const {url, method} = config
+      const {url, method} = originalConfig
       const transformSet = this._getTransformSet(url, method)
       error.isError = true
       const _error: AxiosErrorEx = await transFormError<C>(
         transformSet.error, error, this.context, status)
       if(_error.retry) {
         return Promise.resolve().then(() => {
-          const {
-            url, data, headers, baseURL, method, params,
-          } = _error.config
-          return axios({
-            url, data, headers, baseURL, method, params,
-          })
+          return axios(originalConfig)
         })
       }
       // @ts-ignore
@@ -253,27 +238,23 @@ export default class Transforms<C = any> {
     ((config: AxiosRequestConfigEx) => Promise<AxiosRequestConfigEx>) {
     return async (config: AxiosRequestConfigEx) => {
       const {context} = this
-      const {url, method} = config
-      const {
-        key, value: status = {
-          originalConfig: {...config},
-        },
-      } = this._statusMap.getStatusInMany(config.transformRequest)
-      const saveStatusKey = key || this._statusMap.createStatus(status)
-      config.transformRequest = onlyArray(config.transformRequest)
-      config.transformRequest.push(saveStatusKey)
+      const _config = config.__config || config
+      const {url, method} = _config
+      if(!config.__config) {
+        config.__config = config
+      }
 
       // get transform
       const transformSet = this._getTransformSet(url, method)
       // request
       const newConfig = await transFormRequest(
         transformSet.request,
-        {...config},
+        {..._config},
         context,
       )
 
       // response
-      newConfig.transformResponse = this._getResponseTransforms({...config})
+      newConfig.transformResponse = this._getResponseTransforms({..._config})
       return newConfig
     }
   }

@@ -324,7 +324,6 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                                 config.params = __assign({}, originalConfig.params);
                                 config.data = __assign({}, originalConfig.data);
                                 config.headers = __assign({}, originalConfig.headers);
-                                config.info = __assign({}, originalConfig.info);
                             }
                             url = config.url, method = config.method;
                             transformSet = this._getTransformSet(url, method);
@@ -334,7 +333,9 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             _error = _d.sent();
                             if (_error.retry) {
                                 return [2 /*return*/, Promise.resolve().then(function () {
-                                        var _a = _error.config, url = _a.url, data = _a.data, headers = _a.headers, baseURL = _a.baseURL, method = _a.method, params = _a.params;
+                                        config.transformRequest = [];
+                                        config.transformResponse = [];
+                                        var url = config.url, data = config.data, headers = config.headers, baseURL = config.baseURL, method = config.method, params = config.params;
                                         return axios({
                                             url: url, data: data, headers: headers, baseURL: baseURL, method: method, params: params,
                                         });

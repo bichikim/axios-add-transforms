@@ -9,8 +9,13 @@ export interface AxiosErrorEx extends AxiosError {
   config: AxiosRequestConfigEx
 }
 
+export interface Status {
+  retry?: number
+}
+
 export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-  info?: any
+  __status?: Status
+  __config?: AxiosRequestConfig
 }
 
 export interface InterceptorIds {
