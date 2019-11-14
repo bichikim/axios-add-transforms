@@ -24,10 +24,14 @@ export function forEachPromise(items, value: any, ...args: any[]) {
   }, Promise.resolve(value))
 }
 
-export function mergeArrays<T = any>(items: Array<T | T[] | undefined | null>): T[] {
-  return items.reduce((result: T[], item: T | T[] | undefined | null) => {
+export function mergeArrays<T = any>(
+  items: Array<T | T[] | object | undefined | null>,
+): T[] {
+  return items.reduce<any[]>((result: any[], item: any) => {
     if(Array.isArray(item)) {
       result.push(...item)
+    } else if(typeof item === 'object' && item !== null) {
+      result.push(...Object.keys(item).map((key) => (item[key])))
     } else if(item) {
       result.push(item)
     }
@@ -52,7 +56,12 @@ export function transFormError<C>(
   return forEachPromise(transforms, error, context, status)
 }
 
-export function getMatchedMatchers(matchers: Matcher[], url: string = '/', method?: Method) {
+export function getMatchedMatchers(
+  matchers: Matcher[],
+  /* istanbul ignore next  no way to test*/
+  url: string = '/',
+  method?: Method,
+  ) {
   const _method = method && method.toUpperCase()
   return matchers.reduce<Matcher[]>((matchedMatchers, matcher) => {
     const {method, test} = matcher
@@ -71,7 +80,11 @@ export function getMatchedMatchers(matchers: Matcher[], url: string = '/', metho
 }
 
 export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> {
-  return matchers.reduce((result: TransformSetArray<C>, transform: TransformSet = {}) => {
+  return matchers.reduce((
+    result: TransformSetArray<C>,
+    /* istanbul ignore next  no way to test */
+    transform: TransformSet = {},
+    ) => {
     result.request = mergeArrays<TransformerRequest<C>>([result.request, transform.request])
     result.response = mergeArrays<TransformerResponse<C>>([result.response, transform.response])
     result.error = mergeArrays<TransformError<C>>([result.error, transform.error])

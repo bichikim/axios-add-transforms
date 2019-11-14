@@ -25,6 +25,9 @@ export function mergeArrays(items) {
         if (Array.isArray(item)) {
             result.push.apply(result, item);
         }
+        else if (typeof item === 'object' && item !== null) {
+            result.push.apply(result, Object.keys(item).map(function (key) { return (item[key]); }));
+        }
         else if (item) {
             result.push(item);
         }
@@ -37,7 +40,9 @@ export function transFormRequest(transforms, config, context) {
 export function transFormError(transforms, error, context, status) {
     return forEachPromise(transforms, error, context, status);
 }
-export function getMatchedMatchers(matchers, url, method) {
+export function getMatchedMatchers(matchers, 
+/* istanbul ignore next  no way to test*/
+url, method) {
     if (url === void 0) { url = '/'; }
     var _method = method && method.toUpperCase();
     return matchers.reduce(function (matchedMatchers, matcher) {
@@ -57,7 +62,9 @@ export function getMatchedMatchers(matchers, url, method) {
     }, []);
 }
 export function margeMatcher(matchers) {
-    return matchers.reduce(function (result, transform) {
+    return matchers.reduce(function (result, 
+    /* istanbul ignore next  no way to test */
+    transform) {
         if (transform === void 0) { transform = {}; }
         result.request = mergeArrays([result.request, transform.request]);
         result.response = mergeArrays([result.response, transform.response]);
@@ -68,5 +75,15 @@ export function margeMatcher(matchers) {
         response: [],
         error: [],
     });
+}
+export function createCacheKey(url, method) {
+    return method + ">" + url;
+}
+export function getInfo(config) {
+    if (!config) {
+        return;
+    }
+    var info = config.info;
+    return typeof info === 'function' ? info() : info;
 }
 //# sourceMappingURL=utils.js.map

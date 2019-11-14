@@ -1,4 +1,16 @@
 import { AxiosError, AxiosRequestConfig } from 'axios';
+declare module 'axios/index' {
+    interface AxiosRequestConfig {
+        /**
+         * info for transformer
+         */
+        info?: any | (() => any);
+    }
+    interface AxiosInstance {
+        (config: AxiosRequestConfig): AxiosPromise;
+        (url: string, config?: AxiosRequestConfig): AxiosPromise;
+    }
+}
 export declare type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string;
 export interface AxiosErrorEx extends AxiosError {
     retry?: boolean;

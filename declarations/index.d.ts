@@ -2,18 +2,6 @@ import { AxiosInstance } from 'axios';
 import { InterceptorIds, MargeResponse, Matcher, TransformSet, TransformsOptions } from './types';
 export * from './types';
 export * from './utils';
-declare module 'axios/index' {
-    interface AxiosRequestConfig {
-        /**
-         * info for transformer
-         */
-        info?: any;
-    }
-    interface AxiosInstance {
-        (config: AxiosRequestConfig): AxiosPromise;
-        (url: string, config?: AxiosRequestConfig): AxiosPromise;
-    }
-}
 export default class Transforms<C = any> {
     private readonly _options;
     private _interceptorId;

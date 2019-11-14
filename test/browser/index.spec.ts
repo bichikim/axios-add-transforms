@@ -1,4 +1,6 @@
 import Transforms, {TransformsOptions} from '@/index'
+import {getInfo} from '@/utils'
+
 import Axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 
@@ -219,6 +221,115 @@ describe('lib/transforms', function test() {
         info: {foo: true},
       })
       expect(result).to.be.a('object')
+    })
+
+    it('should keep function info', async function test() {
+      const payload = {
+        foo: false,
+        bar: false,
+      }
+      const {axios, mock} = newTest({
+        matchers: [
+          {
+            test: /^\/foo\/?$/,
+            transform: {
+              request: [(config) => {
+                config.data = {}
+                config.data.foo = config.info.foo
+                config.data.bar = config.info.bar
+                return config
+              }],
+            },
+          },
+        ],
+      })
+      mock.onPost('/foo').reply((config) => {
+        let data
+        try {
+          data = JSON.parse(config.data)
+        } catch(e) {
+          data = config.data
+        }
+        if(data.foo && data.bar) {
+          return [200, {}]
+        }
+        return [400]
+      })
+      payload.bar = true
+      payload.foo = true
+      const result = await axios({
+        url: '/foo',
+        method: 'post',
+        info: () => ({
+          foo: payload.foo,
+          bar: payload.bar,
+        }),
+      })
+      expect(result).to.be.a('object')
+    })
+
+    it('should margeResponse front', async function test() {
+      const {axios, mock} = newTest({
+        margeResponse: 'front',
+        matchers: [
+          {
+            test: /^\/foo\/?/,
+            transform: {
+              response: (data) => {
+                data.response = 'transformer'
+                return data
+              },
+            },
+          },
+        ],
+      })
+      mock.onPost('/foo').reply(200, {})
+      const result = await axios({
+        url: '/foo',
+        method: 'post',
+        transformResponse: [
+          (data) => {
+            data.response = 'config'
+            return data
+          },
+        ],
+      })
+      expect(result.data.response).to.equal('config')
+    })
+    it('should margeResponse back', async function test() {
+      const {axios, mock} = newTest({
+        margeResponse: 'back',
+        matchers: [
+          {
+            test: /^\/foo\/?/,
+            transform: {
+              response: (data) => {
+                data.response = 'transformer'
+                return data
+              },
+            },
+          },
+        ],
+      })
+      mock.onPost('/foo').reply(200, {})
+      const result = await axios({
+        url: '/foo',
+        method: 'post',
+        transformResponse: [
+          (data) => {
+            data.response = 'config'
+            return data
+          },
+        ],
+      })
+      expect(result.data.response).to.equal('transformer')
+    })
+  })
+
+  describe('getInfo', function test() {
+    it('should return undefined', function test() {
+      const result = getInfo(undefined)
+      expect(result).to.equal(undefined)
     })
   })
 

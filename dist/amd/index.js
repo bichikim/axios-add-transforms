@@ -80,6 +80,9 @@ define("utils", ["require", "exports"], function (require, exports) {
             if (Array.isArray(item)) {
                 result.push.apply(result, item);
             }
+            else if (typeof item === 'object' && item !== null) {
+                result.push.apply(result, Object.keys(item).map(function (key) { return (item[key]); }));
+            }
             else if (item) {
                 result.push(item);
             }
@@ -95,7 +98,9 @@ define("utils", ["require", "exports"], function (require, exports) {
         return forEachPromise(transforms, error, context, status);
     }
     exports.transFormError = transFormError;
-    function getMatchedMatchers(matchers, url, method) {
+    function getMatchedMatchers(matchers, 
+    /* istanbul ignore next  no way to test*/
+    url, method) {
         if (url === void 0) { url = '/'; }
         var _method = method && method.toUpperCase();
         return matchers.reduce(function (matchedMatchers, matcher) {
@@ -116,7 +121,9 @@ define("utils", ["require", "exports"], function (require, exports) {
     }
     exports.getMatchedMatchers = getMatchedMatchers;
     function margeMatcher(matchers) {
-        return matchers.reduce(function (result, transform) {
+        return matchers.reduce(function (result, 
+        /* istanbul ignore next  no way to test */
+        transform) {
             if (transform === void 0) { transform = {}; }
             result.request = mergeArrays([result.request, transform.request]);
             result.response = mergeArrays([result.response, transform.response]);
@@ -129,6 +136,18 @@ define("utils", ["require", "exports"], function (require, exports) {
         });
     }
     exports.margeMatcher = margeMatcher;
+    function createCacheKey(url, method) {
+        return method + ">" + url;
+    }
+    exports.createCacheKey = createCacheKey;
+    function getInfo(config) {
+        if (!config) {
+            return;
+        }
+        var info = config.info;
+        return typeof info === 'function' ? info() : info;
+    }
+    exports.getInfo = getInfo;
 });
 define("index", ["require", "exports", "utils", "utils"], function (require, exports, utils_1, utils_2) {
     "use strict";
@@ -137,9 +156,6 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
     }
     Object.defineProperty(exports, "__esModule", { value: true });
     __export(utils_2);
-    function _createCacheKey(url, method) {
-        return method + ">" + url;
-    }
     var Transforms = /** @class */ (function () {
         function Transforms(options) {
             if (options === void 0) { options = {}; }
@@ -264,15 +280,21 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                     switch (_a.label) {
                         case 0:
                             config = error.config;
+                            if (!config) {
+                                throw error;
+                            }
                             originalConfig = config.__config;
-                            if (!config || !originalConfig) {
+                            /* istanbul ignore if  no way to test*/
+                            if (!originalConfig) {
                                 throw error;
                             }
                             status = config.__status;
+                            /* istanbul ignore else  no way to test*/
                             if (!status) {
                                 status = {};
                                 config.__status = status;
                             }
+                            error.config.info = utils_1.getInfo(originalConfig);
                             url = originalConfig.url, method = originalConfig.method;
                             transformSet = this._getTransformSet(url, method);
                             error.isError = true;
@@ -297,7 +319,7 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
         Transforms.prototype._requestInterceptors = function () {
             var _this = this;
             return function (config) { return __awaiter(_this, void 0, void 0, function () {
-                var context, _config, url, method, transformSet, newConfig;
+                var context, _config, url, method, info, transformSet, newConfig;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -307,14 +329,15 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             if (!config.__config) {
                                 config.__config = config;
                             }
+                            info = utils_1.getInfo(_config);
                             transformSet = this._getTransformSet(url, method);
-                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, _config), context)
+                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign(__assign({}, _config), { info: info }), context)
                                 // response
                             ];
                         case 1:
                             newConfig = _a.sent();
                             // response
-                            newConfig.transformResponse = this._getResponseTransforms(__assign({}, _config));
+                            newConfig.transformResponse = this._getResponseTransforms(__assign(__assign({}, _config), { info: info }));
                             return [2 /*return*/, newConfig];
                     }
                 });
@@ -328,7 +351,7 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
          * @private
          */
         Transforms.prototype._saveCache = function (url, method, save) {
-            var key = _createCacheKey(url, method);
+            var key = utils_1.createCacheKey(url, method);
             var value = this._cache.get(key);
             if (!value) {
                 var value_1 = save();
@@ -340,7 +363,9 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
         /**
          * Find matched transforms
          */
-        Transforms.prototype._getTransformSet = function (url, method) {
+        Transforms.prototype._getTransformSet = function (url, 
+        /* istanbul ignore next no way to test*/
+        method) {
             var _this = this;
             if (url === void 0) { url = '/'; }
             if (method === void 0) { method = 'all'; }

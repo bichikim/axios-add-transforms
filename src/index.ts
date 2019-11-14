@@ -151,11 +151,13 @@ export default class Transforms<C = any> {
         throw error
       }
       const originalConfig = config.__config
+      /* istanbul ignore if  no way to test*/
       if(!originalConfig) {
         throw error
       }
 
       let status = config.__status
+      /* istanbul ignore else  no way to test*/
       if(!status) {
         status = {}
         config.__status = status
@@ -235,6 +237,7 @@ export default class Transforms<C = any> {
    */
   private _getTransformSet(
     url: string = '/',
+    /* istanbul ignore next no way to test*/
     method: Method = 'all',
   ): TransformSetArray<C> {
     return this._saveCache(url, method, () => {
