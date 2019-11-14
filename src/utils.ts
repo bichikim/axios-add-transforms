@@ -82,3 +82,15 @@ export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> 
     error: [],
   })
 }
+
+export function createCacheKey(url: string, method: string): string {
+  return `${method}>${url}`
+}
+
+export function getInfo(config?: AxiosRequestConfigEx) {
+  if(!config) {
+    return
+  }
+  const {info} = config
+  return typeof info === 'function' ? info() : info
+}

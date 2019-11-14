@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosPromise, AxiosRequestConfig, AxiosTransformer} from 'axios'
+import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
 import {
   AxiosErrorEx,
   AxiosRequestConfigEx,
@@ -12,6 +12,8 @@ import {
   TransformsOptions,
 } from './types'
 import {
+  createCacheKey,
+  getInfo,
   getMatchedMatchers,
   margeMatcher,
   mergeArrays,
@@ -21,26 +23,6 @@ import {
 
 export * from './types'
 export * from './utils'
-
-// override axios type
-declare module 'axios/index' {
-  // override axios AxiosRequestConfig
-  export interface AxiosRequestConfig {
-    /**
-     * info for transformer
-     */
-    info?: any
-  }
-
-  export interface AxiosInstance {
-    (config: AxiosRequestConfig): AxiosPromise
-    (url: string, config?: AxiosRequestConfig): AxiosPromise
-  }
-}
-
-function _createCacheKey(url: string, method: string): string {
-  return `${method}>${url}`
-}
 
 export default class Transforms<C = any> {
 
@@ -165,8 +147,11 @@ export default class Transforms<C = any> {
     ((error: AxiosErrorEx) => Promise<AxiosErrorEx | any>) {
     return async (error: AxiosErrorEx) => {
       const {config} = error
+      if(!config) {
+        throw error
+      }
       const originalConfig = config.__config
-      if(!config || !originalConfig) {
+      if(!originalConfig) {
         throw error
       }
 
@@ -175,6 +160,8 @@ export default class Transforms<C = any> {
         status = {}
         config.__status = status
       }
+
+      error.config.info = getInfo(originalConfig)
 
       const {url, method} = originalConfig
       const transformSet = this._getTransformSet(url, method)
@@ -205,17 +192,19 @@ export default class Transforms<C = any> {
         config.__config = config
       }
 
+      const info = getInfo(_config)
+
       // get transform
       const transformSet = this._getTransformSet(url, method)
       // request
       const newConfig = await transFormRequest(
         transformSet.request,
-        {..._config},
+        {..._config, info},
         context,
       )
 
       // response
-      newConfig.transformResponse = this._getResponseTransforms({..._config})
+      newConfig.transformResponse = this._getResponseTransforms({..._config, info})
       return newConfig
     }
   }
@@ -231,7 +220,7 @@ export default class Transforms<C = any> {
     url: string,
     method: string,
     save: (() => TransformSetArray<C>)): TransformSetArray<C> {
-    const key = _createCacheKey(url, method)
+    const key = createCacheKey(url, method)
     const value = this._cache.get(key)
     if(!value) {
       const value = save()

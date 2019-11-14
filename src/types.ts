@@ -1,4 +1,20 @@
-import {AxiosError, AxiosRequestConfig} from 'axios'
+import {AxiosError, AxiosPromise, AxiosRequestConfig} from 'axios'
+
+// override axios type
+declare module 'axios/index' {
+  // override axios AxiosRequestConfig
+  export interface AxiosRequestConfig {
+    /**
+     * info for transformer
+     */
+    info?: any | (() => any)
+  }
+
+  export interface AxiosInstance {
+    (config: AxiosRequestConfig): AxiosPromise
+    (url: string, config?: AxiosRequestConfig): AxiosPromise
+  }
+}
 
 export type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' |
   'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string

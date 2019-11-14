@@ -254,7 +254,7 @@ describe('lib/transforms', function test() {
       try {
         result = await axios({url: '/foo', method: 'post'})
       } catch(e) {
-        expect(e).to.instanceOf(Error)
+        expect(e).to.be.a('function')
       }
 
       expect(result).to.equal(undefined)
