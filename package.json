@@ -1,6 +1,6 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/amd/index.js",
