@@ -9,27 +9,15 @@ declare module 'axios/index' {
          */
         info?: any;
     }
-}
-export declare class StatusMapper<K extends object, S> {
-    private readonly _statusMap;
-    private readonly _creator;
-    constructor(creator: (() => K));
-    getStatus(key: K): S | undefined;
-    saveStatus(key: K, value: S): void;
-    createStatus(value: S): K;
-    getStatusInMany(keys: any[] | any): {
-        key: any;
-        value: S;
-    } | {
-        key: undefined;
-        value: undefined;
-    };
+    interface AxiosInstance {
+        (config: AxiosRequestConfig): AxiosPromise;
+        (url: string, config?: AxiosRequestConfig): AxiosPromise;
+    }
 }
 export default class Transforms<C = any> {
     private readonly _options;
     private _interceptorId;
     private readonly _cache;
-    private readonly _statusMap;
     get first(): TransformSet<C> | undefined;
     get final(): TransformSet<C> | undefined;
     get context(): C;

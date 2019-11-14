@@ -5,7 +5,12 @@ export interface AxiosErrorEx extends AxiosError {
     isError?: boolean;
     config: AxiosRequestConfigEx;
 }
+export interface Status {
+    retry?: number;
+}
 export interface AxiosRequestConfigEx extends AxiosRequestConfig {
+    __status?: Status;
+    __config?: AxiosRequestConfig;
 }
 export interface InterceptorIds {
     request: number;
@@ -16,7 +21,6 @@ export interface TransFormerStatus {
     retry?: number;
     originalConfig?: AxiosRequestConfigEx;
 }
-export declare type StatusKeyFunction = (data: any) => any;
 /**
  * Request Transformer function
  * @deprecated

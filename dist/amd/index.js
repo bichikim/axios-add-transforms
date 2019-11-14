@@ -129,16 +129,6 @@ define("utils", ["require", "exports"], function (require, exports) {
         });
     }
     exports.margeMatcher = margeMatcher;
-    function onlyArray(value) {
-        if (!Array.isArray(value)) {
-            if (!value) {
-                return [];
-            }
-            return [value];
-        }
-        return value;
-    }
-    exports.onlyArray = onlyArray;
 });
 define("index", ["require", "exports", "utils", "utils"], function (require, exports, utils_1, utils_2) {
     "use strict";
@@ -150,51 +140,16 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
     function _createCacheKey(url, method) {
         return method + ">" + url;
     }
-    var StatusMapper = /** @class */ (function () {
-        function StatusMapper(creator) {
-            this._statusMap = new WeakMap();
-            this._creator = creator;
-        }
-        StatusMapper.prototype.getStatus = function (key) {
-            return this._statusMap.get(key);
-        };
-        StatusMapper.prototype.saveStatus = function (key, value) {
-            this._statusMap.set(key, value);
-        };
-        StatusMapper.prototype.createStatus = function (value) {
-            var key = this._creator();
-            this._statusMap.set(key, value);
-            return key;
-        };
-        StatusMapper.prototype.getStatusInMany = function (keys) {
-            if (Array.isArray(keys)) {
-                for (var _i = 0, keys_1 = keys; _i < keys_1.length; _i++) {
-                    var key = keys_1[_i];
-                    var value_1 = this.getStatus(key);
-                    if (value_1) {
-                        return { key: key, value: value_1 };
-                    }
-                }
-                return { key: undefined, value: undefined };
-            }
-            var value = this._statusMap.get(keys);
-            if (value) {
-                return { key: keys, value: value };
-            }
-            return { key: undefined, value: undefined };
-        };
-        return StatusMapper;
-    }());
-    exports.StatusMapper = StatusMapper;
     var Transforms = /** @class */ (function () {
         function Transforms(options) {
             if (options === void 0) { options = {}; }
             this._interceptorId = null;
             this._cache = new Map();
-            this._statusMap = new StatusMapper(function () { return function (config) { return (config); }; });
             this._options = __assign({}, options);
         }
         Object.defineProperty(Transforms.prototype, "first", {
+            // private readonly _statusMap: StatusMapper<StatusKeyFunction, TransFormerStatus>
+            //   = new StatusMapper<StatusKeyFunction, TransFormerStatus>(() => (config) => (config))
             get: function () {
                 return this._options.first;
             },
@@ -304,41 +259,29 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
         Transforms.prototype._errorInterceptors = function (axios) {
             var _this = this;
             return function (error) { return __awaiter(_this, void 0, void 0, function () {
-                var config, _a, key, _b, status, _c, originalConfig, url, method, transformSet, _error;
-                return __generator(this, function (_d) {
-                    switch (_d.label) {
+                var config, originalConfig, status, url, method, transformSet, _error;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
                         case 0:
                             config = error.config;
-                            if (!config) {
+                            originalConfig = config.__config;
+                            if (!config || !originalConfig) {
                                 throw error;
                             }
-                            _a = this._statusMap.getStatusInMany(config.transformRequest), key = _a.key, _b = _a.value, status = _b === void 0 ? {} : _b;
-                            config.transformResponse = [];
-                            config.transformRequest = [];
-                            config.transformRequest.push(key);
-                            _c = status.originalConfig, originalConfig = _c === void 0 ? config : _c;
-                            /* istanbul ignore else no way to enter else*/
-                            if (originalConfig) {
-                                config.url = originalConfig.url;
-                                config.method = originalConfig.method;
-                                config.params = __assign({}, originalConfig.params);
-                                config.data = __assign({}, originalConfig.data);
-                                config.headers = __assign({}, originalConfig.headers);
+                            status = config.__status;
+                            if (!status) {
+                                status = {};
+                                config.__status = status;
                             }
-                            url = config.url, method = config.method;
+                            url = originalConfig.url, method = originalConfig.method;
                             transformSet = this._getTransformSet(url, method);
                             error.isError = true;
                             return [4 /*yield*/, utils_1.transFormError(transformSet.error, error, this.context, status)];
                         case 1:
-                            _error = _d.sent();
+                            _error = _a.sent();
                             if (_error.retry) {
                                 return [2 /*return*/, Promise.resolve().then(function () {
-                                        config.transformRequest = [];
-                                        config.transformResponse = [];
-                                        var url = config.url, data = config.data, headers = config.headers, baseURL = config.baseURL, method = config.method, params = config.params;
-                                        return axios({
-                                            url: url, data: data, headers: headers, baseURL: baseURL, method: method, params: params,
-                                        });
+                                        return axios(originalConfig);
                                     })];
                             }
                             // @ts-ignore
@@ -354,26 +297,24 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
         Transforms.prototype._requestInterceptors = function () {
             var _this = this;
             return function (config) { return __awaiter(_this, void 0, void 0, function () {
-                var context, url, method, _a, key, _b, status, saveStatusKey, transformSet, newConfig;
-                return __generator(this, function (_c) {
-                    switch (_c.label) {
+                var context, _config, url, method, transformSet, newConfig;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
                         case 0:
                             context = this.context;
-                            url = config.url, method = config.method;
-                            _a = this._statusMap.getStatusInMany(config.transformRequest), key = _a.key, _b = _a.value, status = _b === void 0 ? {
-                                originalConfig: __assign({}, config),
-                            } : _b;
-                            saveStatusKey = key || this._statusMap.createStatus(status);
-                            config.transformRequest = utils_1.onlyArray(config.transformRequest);
-                            config.transformRequest.push(saveStatusKey);
+                            _config = config.__config || config;
+                            url = _config.url, method = _config.method;
+                            if (!config.__config) {
+                                config.__config = config;
+                            }
                             transformSet = this._getTransformSet(url, method);
-                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, config), context)
+                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, _config), context)
                                 // response
                             ];
                         case 1:
-                            newConfig = _c.sent();
+                            newConfig = _a.sent();
                             // response
-                            newConfig.transformResponse = this._getResponseTransforms(__assign({}, config));
+                            newConfig.transformResponse = this._getResponseTransforms(__assign({}, _config));
                             return [2 /*return*/, newConfig];
                     }
                 });
@@ -390,9 +331,9 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
             var key = _createCacheKey(url, method);
             var value = this._cache.get(key);
             if (!value) {
-                var value_2 = save();
-                this._cache.set(key, value_2);
-                return value_2;
+                var value_1 = save();
+                this._cache.set(key, value_1);
+                return value_1;
             }
             return value;
         };

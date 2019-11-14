@@ -69,13 +69,4 @@ export function margeMatcher(matchers) {
         error: [],
     });
 }
-export function onlyArray(value) {
-    if (!Array.isArray(value)) {
-        if (!value) {
-            return [];
-        }
-        return [value];
-    }
-    return value;
-}
 //# sourceMappingURL=utils.js.map

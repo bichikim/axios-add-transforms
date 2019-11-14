@@ -30,8 +30,6 @@ export interface TransFormerStatus {
   originalConfig?: AxiosRequestConfigEx
 }
 
-export type StatusKeyFunction = (data: any) => any
-
 /**
  * Request Transformer function
  * @deprecated

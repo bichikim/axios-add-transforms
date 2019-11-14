@@ -6,4 +6,3 @@ export declare function transFormRequest<C>(transforms: Array<TransformerRequest
 export declare function transFormError<C>(transforms: Array<TransformError<C>>, error: AxiosErrorEx, context: C, status: TransFormerStatus): Promise<AxiosErrorEx>;
 export declare function getMatchedMatchers(matchers: Matcher[], url?: string, method?: Method): Matcher<any>[];
 export declare function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C>;
-export declare function onlyArray(value: any | any[]): any[];

@@ -82,13 +82,3 @@ export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> 
     error: [],
   })
 }
-
-export function onlyArray(value: any | any[]) {
-  if(!Array.isArray(value)) {
-    if(!value) {
-      return []
-    }
-    return [value]
-  }
-  return value
-}

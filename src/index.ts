@@ -1,4 +1,4 @@
-import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
+import {AxiosInstance, AxiosPromise, AxiosRequestConfig, AxiosTransformer} from 'axios'
 import {
   AxiosErrorEx,
   AxiosRequestConfigEx,
@@ -6,9 +6,7 @@ import {
   MargeResponse,
   Matcher,
   Method,
-  StatusKeyFunction,
   TransformerResponse,
-  TransFormerStatus,
   TransformSet,
   TransformSetArray,
   TransformsOptions,
@@ -17,7 +15,6 @@ import {
   getMatchedMatchers,
   margeMatcher,
   mergeArrays,
-  onlyArray,
   transFormError,
   transFormRequest,
 } from './utils'
@@ -34,52 +31,16 @@ declare module 'axios/index' {
      */
     info?: any
   }
+
+  export interface AxiosInstance {
+    (config: AxiosRequestConfig): AxiosPromise
+    (url: string, config?: AxiosRequestConfig): AxiosPromise
+  }
 }
 
 function _createCacheKey(url: string, method: string): string {
   return `${method}>${url}`
 }
-
-// export class StatusMapper<K extends object, S> {
-//
-//   private readonly _statusMap: WeakMap<K, S> = new WeakMap()
-//   private readonly _creator: () => K
-//
-//   constructor(creator: (() => K)) {
-//     this._creator = creator
-//   }
-//
-//   getStatus(key: K): S | undefined {
-//     return this._statusMap.get(key)
-//   }
-//
-//   saveStatus(key: K, value: S) {
-//     this._statusMap.set(key, value)
-//   }
-//
-//   createStatus(value: S): K {
-//     const key = this._creator()
-//     this._statusMap.set(key, value)
-//     return key
-//   }
-//
-//   getStatusInMany(keys: any[] | any) {
-//     if(Array.isArray(keys)) {
-//       for(const key of keys) {
-//         const value = this.getStatus(key)
-//         if(value) {
-//           return {key, value}
-//         }
-//       }
-//       return {key: undefined, value: undefined}
-//     }
-//     const value = this._statusMap.get(keys)
-//     if(value) {
-//       return {key: keys, value}
-//     }
-//     return {key: undefined, value: undefined}
-//   }
-// }
 
 export default class Transforms<C = any> {
 
