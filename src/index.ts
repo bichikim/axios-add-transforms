@@ -1,4 +1,5 @@
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
+import cloneDeep from 'lodash.clonedeep'
 import {
   AxiosErrorEx,
   AxiosRequestConfigEx,
@@ -31,6 +32,8 @@ export default class Transforms<C = any> {
   private _interceptorId: InterceptorIds | null = null
 
   private readonly _cache: Map<string, TransformSetArray<C>> = new Map()
+
+  private _axios: AxiosInstance
 
   get first(): TransformSet<C> | undefined {
     return this._options.first
@@ -69,6 +72,7 @@ export default class Transforms<C = any> {
     }
     axios.interceptors.request.eject(this._interceptorId.request)
     axios.interceptors.response.eject(this._interceptorId.response)
+
     this._interceptorId = null
     return true
   }
@@ -154,6 +158,7 @@ export default class Transforms<C = any> {
       }
 
       let status = config.__status
+
       /* istanbul ignore else  no way to test*/
       if(!status) {
         status = {}
@@ -188,7 +193,16 @@ export default class Transforms<C = any> {
       const _config = config.__config || config
       const {url, method} = _config
       if(!config.__config) {
-        config.__config = config
+        config.__config = {
+          ...config,
+          __config: null,
+          method: cloneDeep(config.method),
+          data: cloneDeep(config.data),
+          headers: cloneDeep(config.headers),
+          params: cloneDeep(config.params),
+          auth: cloneDeep(config.auth),
+          proxy: cloneDeep(config.proxy),
+        }
       }
 
       const info = getInfo(_config)

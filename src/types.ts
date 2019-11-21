@@ -3,11 +3,11 @@ import {AxiosError, AxiosPromise, AxiosRequestConfig} from 'axios'
 // override axios type
 declare module 'axios/index' {
   // override axios AxiosRequestConfig
-  export interface AxiosRequestConfig {
-    /**
-     * info for transformer
-     */
-    info?: any | (() => any)
+  interface AxiosRequestConfig {
+    __status?: Status | null
+    __config?: AxiosRequestConfig | null
+    info?: any | null
+    __info?: any
   }
 
   export interface AxiosInstance {
@@ -30,8 +30,8 @@ export interface Status {
 }
 
 export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-  __status?: Status
-  __config?: AxiosRequestConfig
+  __status?: Status | null
+  __config?: AxiosRequestConfig | null
 }
 
 export interface InterceptorIds {

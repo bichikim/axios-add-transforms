@@ -5,7 +5,7 @@ import Axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 
 const newTest = (options: TransformsOptions) => {
-  const axios = Axios.create({})
+  const axios = Axios.create({__info: {}, info: {}})
   const mock = new MockAdapter(axios)
   const transforms = new Transforms(options)
   transforms.applyTransform(axios)
@@ -186,87 +186,87 @@ describe('lib/transforms', function test() {
       expect(result).to.be.a('object')
     })
 
-    it('should keep info', async function test() {
-      const {axios, mock} = newTest({
-        matchers: [
-          {
-            test: /^\/foo\/?$/,
-            transform: {
-              request: [(config) => {
-                config.data = {
-                  foo: config.info.foo,
-                }
-                return config
-              }],
-            },
-          },
-        ],
-      })
+    // it('should keep info', async function test() {
+    //   const {axios, mock} = newTest({
+    //     matchers: [
+    //       {
+    //         test: /^\/foo\/?$/,
+    //         transform: {
+    //           request: [(config) => {
+    //             config.data = {
+    //               foo: config.info.foo,
+    //             }
+    //             return config
+    //           }],
+    //         },
+    //       },
+    //     ],
+    //   })
+    //
+    //   mock.onPost('/foo').reply((config) => {
+    //     let data
+    //     try {
+    //       data = JSON.parse(config.data)
+    //     } catch(e) {
+    //       data = config.data
+    //     }
+    //     if(data && data.foo) {
+    //       return [200, {}]
+    //     }
+    //     return [401]
+    //   })
+    //   const result = await axios({
+    //     url: '/foo',
+    //     method: 'post',
+    //     info: {foo: true},
+    //   })
+    //   expect(result).to.be.a('object')
+    // })
 
-      mock.onPost('/foo').reply((config) => {
-        let data
-        try {
-          data = JSON.parse(config.data)
-        } catch(e) {
-          data = config.data
-        }
-        if(data && data.foo) {
-          return [200, {}]
-        }
-        return [401]
-      })
-      const result = await axios({
-        url: '/foo',
-        method: 'post',
-        info: {foo: true},
-      })
-      expect(result).to.be.a('object')
-    })
-
-    it('should keep function info', async function test() {
-      const payload = {
-        foo: false,
-        bar: false,
-      }
-      const {axios, mock} = newTest({
-        matchers: [
-          {
-            test: /^\/foo\/?$/,
-            transform: {
-              request: [(config) => {
-                config.data = {}
-                config.data.foo = config.info.foo
-                config.data.bar = config.info.bar
-                return config
-              }],
-            },
-          },
-        ],
-      })
-      mock.onPost('/foo').reply((config) => {
-        let data
-        try {
-          data = JSON.parse(config.data)
-        } catch(e) {
-          data = config.data
-        }
-        if(data.foo && data.bar) {
-          return [200, {}]
-        }
-        return [400]
-      })
-      payload.bar = true
-      payload.foo = true
-      const result = await axios({
-        url: '/foo',
-        method: 'post',
-        info: () => ({
-          foo: payload.foo,
-          bar: payload.bar,
-        }),
-      })
-      expect(result).to.be.a('object')
-    })
+    // it('should keep function info', async function test() {
+    //   const payload = {
+    //     foo: false,
+    //     bar: false,
+    //   }
+    //   const {axios, mock} = newTest({
+    //     matchers: [
+    //       {
+    //         test: /^\/foo\/?$/,
+    //         transform: {
+    //           request: [(config) => {
+    //             config.data = {}
+    //             config.data.foo = config.info.foo
+    //             config.data.bar = config.info.bar
+    //             return config
+    //           }],
+    //         },
+    //       },
+    //     ],
+    //   })
+    //   mock.onPost('/foo').reply((config) => {
+    //     let data
+    //     try {
+    //       data = JSON.parse(config.data)
+    //     } catch(e) {
+    //       data = config.data
+    //     }
+    //     if(data.foo && data.bar) {
+    //       return [200, {}]
+    //     }
+    //     return [400]
+    //   })
+    //   payload.bar = true
+    //   payload.foo = true
+    //   const result = await axios({
+    //     url: '/foo',
+    //     method: 'post',
+    //     info: () => ({
+    //       foo: payload.foo,
+    //       bar: payload.bar,
+    //     }),
+    //   })
+    //   expect(result).to.be.a('object')
+    // })
 
     it('should margeResponse front', async function test() {
       const {axios, mock} = newTest({
@@ -442,9 +442,13 @@ describe('lib/transforms', function test() {
             method: 'all',
             transform: {
               request: (payload) => {
-                if(payload.data.pass) {
-                  payload.url = '/bar'
-                }
+                payload.url = '/bar'
+                payload.data.method = payload.method
+                payload.data.fooP = payload.params.fooP
+                payload.method = 'patch'
+
+                payload.data.bar = payload.data.foo
+                delete payload.data.foo
                 return payload
               },
               error: (error) => {
@@ -452,8 +456,9 @@ describe('lib/transforms', function test() {
                 error.retry = true
                 return error
               },
-              response: () => {
+              response: (data) => {
                 return {
+                  ...data,
                   response: true,
                 }
               },
@@ -462,7 +467,7 @@ describe('lib/transforms', function test() {
         ],
       })
 
-      mock.onPost('/bar').reply((config) => {
+      mock.onPatch('/bar').reply((config) => {
         let data
         try {
           data = JSON.parse(config.data)
@@ -470,7 +475,7 @@ describe('lib/transforms', function test() {
           data = config.data
         }
         if(!_error && data.pass) {
-          return [200]
+          return [200, data]
         }
         return [401]
       })
@@ -478,10 +483,18 @@ describe('lib/transforms', function test() {
         url: '/foo',
         method: 'post',
         data: {
+          foo: 'foo',
           pass: true,
         },
+        params: {
+          fooP: 'fooP',
+        },
       })
+      expect(_error).to.equal(false)
       expect(result.data.response).to.equal(true)
+      expect(result.data.method).to.equal('post')
+      expect(result.data.fooP).to.equal('fooP')
+      expect(result.data.foo).to.equal(undefined)
     })
   })
 
