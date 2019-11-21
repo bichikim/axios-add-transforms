@@ -135,18 +135,19 @@ module.exports = {
     'block-spacing': ['error', 'never'],
     'camelcase': ['error', {'properties': 'always'}],
     'comma-dangle': ['error', 'always-multiline'],
-    'capitalized-comments': [
-      'error',
-      'always',
-      {
-        'line': {
-          'ignorePattern': '^(\w)*',
-        },
-        'block': {
-          'ignorePattern': '^( ?)(tslint:disable|eslint-disable|istanbul ignore)',
-        },
-      },
-    ],
+    // 'capitalized-comments': [
+    //   'error',
+    //   'always',
+    //   {
+    //     'line': {
+    //       'ignorePattern': '^(\w)*',
+    //     },
+    //     'block': {
+    //       'ignorePattern': '^( ?)(tslint:disable|eslint-disable|istanbul ignore)',
+    //     },
+    //   },
+    // ],
+    'capitalized-comments': 'off',
     'comma-style': ['error', 'last'],
     'complexity': ['error', 20],
     'consistent-this': ['error', 'self'],

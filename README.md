@@ -17,19 +17,24 @@
 ```typescript
 import {AxiosRequestConfig} from 'axios'
 import Transforms from './src'
-import axios, {Method} from 'axios'
+import axios from 'axios'
 
+const myAxios = axios.create({})
 // refer to TransformsOptions
 const transforms = new Transforms({
-  // first: ...
- 
+  context: () => ({axios: myAxios}),
+  // first: TransformSet | TransformSet[]
+  // final: TransformSet | TransformSet[]
+  // margeResponse: 'front' | 'back' | undefined
   matchers: [
     {
-      test: /^\/users\//,
+      test: /^\/users\/?$/,
+      // method: ...
       transform: {
         request: ({data: {foo, bar}, params, headers}) =>
          ({data: {'_foo': foo, '_bar': bar}, params, headers}),
-        // response: ...
+        // response: Matcher | Matcher[]
+        // error: Matcher | Matcher[]
       }
     }
   ]
@@ -42,15 +47,53 @@ const config: AxiosRequestConfig = {
     bar: 'bar',
   }
 }
-import axios, {Method} from 'axios'
 
-const myAxios = axios.create({})
+/**
+ * @deprecated
+ */
+// transforms.addInterceptors(myAxios)
+transforms.applyTransform(myAxios)
 
-transforms.addInterceptors(myAxios)
 
 // request data will ba {_foo: 'foo', _bar: 'bar'}
 myAxios(config).then(() => {
   
 })
+
+// remove transform
+transForms.ejectTransform(myAxios)
+
+```
+
+### retry request
+
+```typescript
+import Transforms from './src'
+
+const trsnsforms = new Transforms({
+  matchers: [
+    {
+      test: /^\/users\/?$/,
+      transform: {
+        error: async (error, context, status) => {
+          // sign-in again
+          await context.axios({
+            url: 'sign-in',
+            method: 'put'
+          })
+          if(!status.retry) {
+            status.retry = 0
+          }
+          status.retry += 1
+          // retry until three times
+          error.retry = status < 3
+          return error
+        }
+      }
+    }
+  ]
+})
+
+
 
 ```

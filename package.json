@@ -1,6 +1,6 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.2.3",
+  "version": "0.4.0",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/amd/index.js",
@@ -33,9 +33,12 @@
     "url": "https://github.com/bichikim/axios-add-transforms/issues"
   },
   "homepage": "https://github.com/bichikim/axios-add-transforms#readme",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "lodash.clonedeep": "^4.5.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.4.5",
-    "@nuxtjs/babel-preset-app": "^0.8.0",
     "@types/chai": "^4.1.6",
     "@types/express": "^4.17.0",
     "@types/lodash": "^4.14.134",
@@ -43,7 +46,7 @@
     "@types/sinon": "^7.0.13",
     "@typescript-eslint/eslint-plugin": "^2.3.3",
     "@typescript-eslint/parser": "^2.3.3",
-    "@vue/babel-preset-app": "^3.5.5",
+    "@vue/babel-preset-app": "^4.0.5",
     "axios-mock-adapter": "^1.17.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.1",
@@ -58,18 +61,19 @@
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-sort-class-members": "^1.5.0",
-    "eslint-plugin-vue": "^5.2.2",
+    "eslint-plugin-vue": "^6.0.0",
     "express": "^4.17.1",
-    "fork-ts-checker-webpack-plugin": "^1.0.0",
+    "fork-ts-checker-webpack-plugin": "^3.1.0",
     "karma": "^4.1.0",
     "karma-chai": "^0.1.0",
-    "karma-chrome-launcher": "^2.2.0",
+    "karma-chrome-launcher": "^3.1.0",
     "karma-coverage-istanbul-reporter": "^2.1.0",
     "karma-mocha": "^1.3.0",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-spec-reporter": "^0.0.32",
     "karma-typescript": "^4.1.0",
     "karma-webpack": "^4.0.2",
+    "lodash": "^4.17.11",
     "mocha": "^6.1.4",
     "node-mocks-http": "^1.7.6",
     "regenerator-runtime": "^0.13.3",
@@ -80,16 +84,13 @@
     "tsconfig-paths": "^3.8.0",
     "tsconfig-paths-webpack-plugin": "^3.2.0",
     "tslint": "^5.18.0",
-    "typescript": "^3.5.2",
+    "typedoc": "^0.15.1",
+    "typescript": "^3.7.2",
     "typescript-eslint-parser": "^22.0.0",
     "universal-cookie": "^4.0.0",
     "vue-loader": "^15.7.1",
     "webpack": "^4.35.0",
     "webpack-merge": "^4.1.4",
     "webpack-node-externals": "^1.7.2"
-  },
-  "dependencies": {
-    "axios": "^0.19.0",
-    "lodash": "^4.17.11"
   }
 }
