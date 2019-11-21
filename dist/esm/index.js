@@ -45,6 +45,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+import cloneDeep from 'lodash.clonedeep';
 import { createCacheKey, getInfo, getMatchedMatchers, margeMatcher, mergeArrays, transFormError, transFormRequest, } from './utils';
 export * from './utils';
 var Transforms = /** @class */ (function () {
@@ -216,7 +217,7 @@ var Transforms = /** @class */ (function () {
                         _config = config.__config || config;
                         url = _config.url, method = _config.method;
                         if (!config.__config) {
-                            config.__config = config;
+                            config.__config = __assign(__assign({}, config), { __config: null, method: cloneDeep(config.method), data: cloneDeep(config.data), headers: cloneDeep(config.headers), params: cloneDeep(config.params), auth: cloneDeep(config.auth), proxy: cloneDeep(config.proxy) });
                         }
                         info = getInfo(_config);
                         transformSet = this._getTransformSet(url, method);

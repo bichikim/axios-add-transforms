@@ -1,10 +1,10 @@
 import { AxiosError, AxiosRequestConfig } from 'axios';
 declare module 'axios/index' {
     interface AxiosRequestConfig {
-        /**
-         * info for transformer
-         */
-        info?: any | (() => any);
+        __status?: Status | null;
+        __config?: AxiosRequestConfig | null;
+        info?: any | null;
+        __info?: any;
     }
     interface AxiosInstance {
         (config: AxiosRequestConfig): AxiosPromise;
@@ -21,8 +21,8 @@ export interface Status {
     retry?: number;
 }
 export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-    __status?: Status;
-    __config?: AxiosRequestConfig;
+    __status?: Status | null;
+    __config?: AxiosRequestConfig | null;
 }
 export interface InterceptorIds {
     request: number;

@@ -6,6 +6,7 @@ export default class Transforms<C = any> {
     private readonly _options;
     private _interceptorId;
     private readonly _cache;
+    private _axios;
     get first(): TransformSet<C> | undefined;
     get final(): TransformSet<C> | undefined;
     get context(): C;

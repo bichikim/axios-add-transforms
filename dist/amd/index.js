@@ -52,6 +52,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 define("types", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -149,12 +152,13 @@ define("utils", ["require", "exports"], function (require, exports) {
     }
     exports.getInfo = getInfo;
 });
-define("index", ["require", "exports", "utils", "utils"], function (require, exports, utils_1, utils_2) {
+define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], function (require, exports, lodash_clonedeep_1, utils_1, utils_2) {
     "use strict";
     function __export(m) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
     }
     Object.defineProperty(exports, "__esModule", { value: true });
+    lodash_clonedeep_1 = __importDefault(lodash_clonedeep_1);
     __export(utils_2);
     var Transforms = /** @class */ (function () {
         function Transforms(options) {
@@ -325,7 +329,7 @@ define("index", ["require", "exports", "utils", "utils"], function (require, exp
                             _config = config.__config || config;
                             url = _config.url, method = _config.method;
                             if (!config.__config) {
-                                config.__config = config;
+                                config.__config = __assign(__assign({}, config), { __config: null, method: lodash_clonedeep_1.default(config.method), data: lodash_clonedeep_1.default(config.data), headers: lodash_clonedeep_1.default(config.headers), params: lodash_clonedeep_1.default(config.params), auth: lodash_clonedeep_1.default(config.auth), proxy: lodash_clonedeep_1.default(config.proxy) });
                             }
                             info = utils_1.getInfo(_config);
                             transformSet = this._getTransformSet(url, method);
