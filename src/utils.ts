@@ -1,13 +1,12 @@
 import {AxiosRequestConfig} from 'axios'
 import {
   AxiosErrorEx,
-  AxiosRequestConfigEx,
   Matcher,
-  Method,
   TransformerRequest,
   TransformerResponse,
   TransformError,
   TransFormerStatus,
+  TransformMethod,
   TransformSet,
   TransformSetArray,
 } from './types'
@@ -39,7 +38,7 @@ export function mergeArrays<T = any>(items: Array<T | T[] | object | undefined |
 
 export function transFormRequest<C>(
   transforms: Array<TransformerRequest<C>>,
-  config: AxiosRequestConfigEx,
+  config: AxiosRequestConfig,
   context: C,
 ): Promise<AxiosRequestConfig> {
   return forEachPromise(transforms, config, context)
@@ -58,8 +57,8 @@ export function getMatchedMatchers(
   matchers: Matcher[],
   /* istanbul ignore next  no way to test*/
   url: string = '/',
-  method?: Method,
-  ) {
+  method?: TransformMethod,
+) {
   const _method = method && method.toUpperCase()
   return matchers.reduce<Matcher[]>((matchedMatchers, matcher) => {
     const {method, test} = matcher
@@ -82,7 +81,7 @@ export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> 
     result: TransformSetArray<C>,
     /* istanbul ignore next  no way to test */
     transform: TransformSet = {},
-    ) => {
+  ) => {
     result.request = mergeArrays<TransformerRequest<C>>([result.request, transform.request])
     result.response = mergeArrays<TransformerResponse<C>>([result.response, transform.response])
     result.error = mergeArrays<TransformError<C>>([result.error, transform.error])
@@ -96,12 +95,4 @@ export function margeMatcher<C>(matchers: TransformSet[]): TransformSetArray<C> 
 
 export function createCacheKey(url: string, method: string): string {
   return `${method}>${url}`
-}
-
-export function getInfo(config?: AxiosRequestConfigEx) {
-  if(!config) {
-    return
-  }
-  const {info} = config
-  return typeof info === 'function' ? info() : info
 }
