@@ -1,6 +1,6 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/umd/index.js",
@@ -73,7 +73,6 @@
     "karma-spec-reporter": "^0.0.32",
     "karma-typescript": "^4.1.0",
     "karma-webpack": "^4.0.2",
-    "lodash": "^4.17.11",
     "mocha": "^6.1.4",
     "node-mocks-http": "^1.7.6",
     "regenerator-runtime": "^0.13.3",
