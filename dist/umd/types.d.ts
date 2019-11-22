@@ -1,37 +1,41 @@
-import { AxiosError, AxiosRequestConfig } from 'axios';
+import { AxiosError, AxiosRequestConfig, Method, Status } from 'axios';
 declare module 'axios/index' {
+    interface Status {
+        retry?: number | boolean | null;
+        originalConfig: AxiosRequestConfig;
+    }
     interface AxiosRequestConfig {
         __status?: Status | null;
         __config?: AxiosRequestConfig | null;
-        info?: any | null;
-        __info?: any;
     }
     interface AxiosInstance {
         (config: AxiosRequestConfig): AxiosPromise;
         (url: string, config?: AxiosRequestConfig): AxiosPromise;
     }
 }
-export declare type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string;
+/**
+ * axios method for transform
+ */
+export declare type TransformMethod = 'all' | 'ALL' | Method;
 export interface AxiosErrorEx extends AxiosError {
+    /**
+     * @deprecated please use example
+     * @example
+     *  error(error, context, status) {
+     *    // this is save as error.retry = true
+     *    status.retry = true
+     *  }
+     */
     retry?: boolean;
-    isError?: boolean;
-    config: AxiosRequestConfigEx;
-}
-export interface Status {
-    retry?: number;
-}
-export interface AxiosRequestConfigEx extends AxiosRequestConfig {
-    __status?: Status | null;
-    __config?: AxiosRequestConfig | null;
+    config: AxiosRequestConfig;
 }
 export interface InterceptorIds {
     request: number;
     response: number;
 }
 export declare type MargeResponse = 'back' | 'front' | 'none';
-export interface TransFormerStatus {
-    retry?: number;
-    originalConfig?: AxiosRequestConfigEx;
+export interface TransFormerStatus extends Status {
+    retry?: any;
 }
 /**
  * Request Transformer function
@@ -41,11 +45,11 @@ export declare type Transformer<C = any> = TransformerRequest<C>;
 /**
  * Request Transformer function
  */
-export declare type TransformerRequest<C = any> = (payload: AxiosRequestConfigEx, context: C) => Promise<AxiosRequestConfigEx> | AxiosRequestConfigEx;
+export declare type TransformerRequest<C = any> = (payload: AxiosRequestConfig, context: C) => Promise<AxiosRequestConfig> | AxiosRequestConfig;
 /**
  * Response Transformer function
  */
-export declare type TransformerResponse<C = any> = (data: any, context: C, config: AxiosRequestConfigEx) => Promise<any> | any;
+export declare type TransformerResponse<C = any> = (data: any, context: C, config: AxiosRequestConfig) => Promise<any> | any;
 /**
  * Error transformer function
  */
@@ -74,7 +78,7 @@ export interface TransformSet<C = any> {
  */
 export interface Matcher<C = any> {
     test: RegExp;
-    method?: 'all' | 'ALL' | Method;
+    method?: TransformMethod;
     transform: TransformSet<C>;
 }
 /**
@@ -85,5 +89,6 @@ export interface TransformsOptions<C = any> {
     final?: TransformSet<C>;
     matchers?: Array<Matcher<C>>;
     margeResponse?: MargeResponse;
+    maxCache?: number | null;
     context?: () => C;
 }

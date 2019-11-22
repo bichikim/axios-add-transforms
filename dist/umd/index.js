@@ -1,10 +1,3 @@
-var __spreadArrays = (this && this.__spreadArrays) || function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
-};
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -55,119 +48,44 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-define("types", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-});
-define("utils", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    function forEachPromise(items, value) {
-        var args = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            args[_i - 2] = arguments[_i];
-        }
-        return items.reduce(function (promise, item) {
-            return promise.then(function (value) {
-                var result = item.apply(void 0, __spreadArrays([value], args));
-                if (typeof result.then === 'function') {
-                    return result;
-                }
-                return Promise.resolve(result);
-            });
-        }, Promise.resolve(value));
+(function (factory) {
+    if (typeof module === "object" && typeof module.exports === "object") {
+        var v = factory(require, exports);
+        if (v !== undefined) module.exports = v;
     }
-    exports.forEachPromise = forEachPromise;
-    function mergeArrays(items) {
-        return items.reduce(function (result, item) {
-            if (Array.isArray(item)) {
-                result.push.apply(result, item);
-            }
-            else if (typeof item === 'object' && item !== null) {
-                result.push.apply(result, Object.keys(item).map(function (key) { return (item[key]); }));
-            }
-            else if (item) {
-                result.push(item);
-            }
-            return result;
-        }, []);
+    else if (typeof define === "function" && define.amd) {
+        define(["require", "exports", "lodash.clonedeep", "./utils", "./utils"], factory);
     }
-    exports.mergeArrays = mergeArrays;
-    function transFormRequest(transforms, config, context) {
-        return forEachPromise(transforms, config, context);
-    }
-    exports.transFormRequest = transFormRequest;
-    function transFormError(transforms, error, context, status) {
-        return forEachPromise(transforms, error, context, status);
-    }
-    exports.transFormError = transFormError;
-    function getMatchedMatchers(matchers, 
-    /* istanbul ignore next  no way to test*/
-    url, method) {
-        if (url === void 0) { url = '/'; }
-        var _method = method && method.toUpperCase();
-        return matchers.reduce(function (matchedMatchers, matcher) {
-            var method = matcher.method, test = matcher.test;
-            var matcherMethod = method && method.toUpperCase();
-            var isMatchMethod = false;
-            if (matcherMethod === 'ALL' || !method || !_method) {
-                isMatchMethod = true;
-            }
-            else {
-                isMatchMethod = _method === matcherMethod;
-            }
-            if (isMatchMethod && test.test(url)) {
-                matchedMatchers.push(matcher);
-            }
-            return matchedMatchers;
-        }, []);
-    }
-    exports.getMatchedMatchers = getMatchedMatchers;
-    function margeMatcher(matchers) {
-        return matchers.reduce(function (result, 
-        /* istanbul ignore next  no way to test */
-        transform) {
-            if (transform === void 0) { transform = {}; }
-            result.request = mergeArrays([result.request, transform.request]);
-            result.response = mergeArrays([result.response, transform.response]);
-            result.error = mergeArrays([result.error, transform.error]);
-            return result;
-        }, {
-            request: [],
-            response: [],
-            error: [],
-        });
-    }
-    exports.margeMatcher = margeMatcher;
-    function createCacheKey(url, method) {
-        return method + ">" + url;
-    }
-    exports.createCacheKey = createCacheKey;
-    function getInfo(config) {
-        if (!config) {
-            return;
-        }
-        var info = config.info;
-        return typeof info === 'function' ? info() : info;
-    }
-    exports.getInfo = getInfo;
-});
-define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], function (require, exports, lodash_clonedeep_1, utils_1, utils_2) {
+})(function (require, exports) {
     "use strict";
     function __export(m) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
     }
     Object.defineProperty(exports, "__esModule", { value: true });
-    lodash_clonedeep_1 = __importDefault(lodash_clonedeep_1);
-    __export(utils_2);
+    var lodash_clonedeep_1 = __importDefault(require("lodash.clonedeep"));
+    var utils_1 = require("./utils");
+    __export(require("./utils"));
     var Transforms = /** @class */ (function () {
+        /**
+         * Save Transforms options
+         * @param options
+         */
         function Transforms(options) {
             if (options === void 0) { options = {}; }
+            /**
+             *  axios interceptor request & resolve id
+             */
             this._interceptorId = null;
+            /**
+             * matcher cache
+             */
             this._cache = new Map();
             this._options = __assign({}, options);
         }
         Object.defineProperty(Transforms.prototype, "first", {
+            /**
+             * first options
+             */
             get: function () {
                 return this._options.first;
             },
@@ -175,13 +93,27 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
             configurable: true
         });
         Object.defineProperty(Transforms.prototype, "final", {
+            /**
+             * get final options
+             */
             get: function () {
                 return this._options.final;
             },
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(Transforms.prototype, "maxCache", {
+            get: function () {
+                return this._options.maxCache;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Transforms.prototype, "context", {
+            /**
+             * get context options
+             * run context function and return context
+             */
             get: function () {
                 var _a = this._options.context, context = _a === void 0 ? function () { return ({}); } : _a;
                 return context();
@@ -190,6 +122,10 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
             configurable: true
         });
         Object.defineProperty(Transforms.prototype, "matchers", {
+            /**
+             * get matchers options
+             * make sure matchers is an array
+             */
             get: function () {
                 var _a = this._options.matchers, matchers = _a === void 0 ? [] : _a;
                 return matchers;
@@ -198,6 +134,9 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
             configurable: true
         });
         Object.defineProperty(Transforms.prototype, "margeResponse", {
+            /**
+             * get margeResponse options
+             */
             get: function () {
                 var margeResponse = this._options.margeResponse;
                 return margeResponse;
@@ -207,6 +146,7 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
         });
         /**
          * Eject transform
+         * eject request & response which is applied by Transforms.applyTransform
          * @param axios
          */
         Transforms.prototype.ejectTransform = function (axios) {
@@ -293,17 +233,15 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
                             status = config.__status;
                             /* istanbul ignore else  no way to test*/
                             if (!status) {
-                                status = {};
+                                status = { originalConfig: originalConfig };
                                 config.__status = status;
                             }
-                            error.config.info = utils_1.getInfo(originalConfig);
                             url = originalConfig.url, method = originalConfig.method;
                             transformSet = this._getTransformSet(url, method);
-                            error.isError = true;
                             return [4 /*yield*/, utils_1.transFormError(transformSet.error, error, this.context, status)];
                         case 1:
                             _error = _a.sent();
-                            if (_error.retry) {
+                            if (status.retry || _error.retry) {
                                 return [2 /*return*/, Promise.resolve().then(function () {
                                         return axios(originalConfig);
                                     })];
@@ -321,25 +259,25 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
         Transforms.prototype._requestInterceptors = function () {
             var _this = this;
             return function (config) { return __awaiter(_this, void 0, void 0, function () {
-                var context, _config, url, method, info, transformSet, newConfig;
+                var context, _config, url, method, transformSet, newConfig;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             context = this.context;
                             _config = config.__config || config;
                             url = _config.url, method = _config.method;
+                            // else coverage needed
                             if (!config.__config) {
                                 config.__config = __assign(__assign({}, config), { __config: null, method: lodash_clonedeep_1.default(config.method), data: lodash_clonedeep_1.default(config.data), headers: lodash_clonedeep_1.default(config.headers), params: lodash_clonedeep_1.default(config.params), auth: lodash_clonedeep_1.default(config.auth), proxy: lodash_clonedeep_1.default(config.proxy) });
                             }
-                            info = utils_1.getInfo(_config);
                             transformSet = this._getTransformSet(url, method);
-                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign(__assign({}, _config), { info: info }), context)
-                                // response
+                            return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, _config), context)
+                                // add  response into transformResponse to transform response after request
                             ];
                         case 1:
                             newConfig = _a.sent();
-                            // response
-                            newConfig.transformResponse = this._getResponseTransforms(__assign(__assign({}, _config), { info: info }));
+                            // add  response into transformResponse to transform response after request
+                            newConfig.transformResponse = this._getResponseTransforms(__assign({}, _config));
                             return [2 /*return*/, newConfig];
                     }
                 });
@@ -347,23 +285,28 @@ define("index", ["require", "exports", "lodash.clonedeep", "utils", "utils"], fu
         };
         /**
          * Manage match cache
-         * @param url
-         * @param method
-         * @param save
+         * @param url axios.url
+         * @param method axios.method
+         * @param save how to save logic function
          * @private
          */
         Transforms.prototype._saveCache = function (url, method, save) {
+            var _a = this, maxCache = _a.maxCache, _cache = _a._cache;
             var key = utils_1.createCacheKey(url, method);
-            var value = this._cache.get(key);
+            var value = _cache.get(key);
             if (!value) {
-                var value_1 = save();
-                this._cache.set(key, value_1);
-                return value_1;
+                value = save();
+                _cache.set(key, value);
+                if (maxCache && _cache.size > 0 && maxCache <= _cache.size) {
+                    _cache.delete(_cache.keys()[0]);
+                }
             }
             return value;
         };
         /**
          * Find matched transforms
+         * @param url axios.url
+         * @param method axios.url & 'all' , 'ALL' all means all of method
          */
         Transforms.prototype._getTransformSet = function (url, 
         /* istanbul ignore next no way to test*/
