@@ -1,6 +1,6 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/umd/index.js",
@@ -34,7 +34,7 @@
   "homepage": "https://github.com/bichikim/axios-add-transforms#readme",
   "dependencies": {
     "axios": "^0.19.0",
-    "lodash.clonedeep": "^4.5.0"
+    "lodash": "^4.17.15"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
