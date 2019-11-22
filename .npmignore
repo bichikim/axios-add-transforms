@@ -2,6 +2,7 @@ test/
 media/
 build/
 config/
+types/
 docs/
 .idea/
 .npmrc
