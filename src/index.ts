@@ -1,5 +1,5 @@
 import {AxiosInstance, AxiosRequestConfig, AxiosTransformer} from 'axios'
-import cloneDeep from 'lodash.clonedeep'
+import {cloneDeep} from 'lodash'
 import {
   AxiosErrorEx,
   InterceptorIds,

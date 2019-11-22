@@ -5,6 +5,7 @@ declare module 'axios/index' {
   export interface Status {
     retry?: number | boolean | null
     originalConfig: AxiosRequestConfig
+    [key: string]: any
   }
 
   // override axios AxiosRequestConfig
