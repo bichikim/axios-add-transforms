@@ -1,10 +1,11 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "axios-add-transforms",
   "author": "bichi",
   "main": "dist/umd/index.js",
   "types": "dist/umd/index.d.ts",
+  "module": "dist/esm/index.js",
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.umd.json",
@@ -14,7 +15,7 @@
     "lint": "eslint \"src/\"",
     "test:unit": "karma start config/karma.config.js --browsers=ChromeHeadless --single-run",
     "test:watch": "karma start config/karma.config.js --browsers=ChromeHeadless --auto-watch",
-    "preversion": "npm run test && npm run build"
+    "preversion": "npm run test && npm run build && npm run build:esm"
   },
   "files": [
     "dist",
