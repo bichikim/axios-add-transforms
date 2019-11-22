@@ -1,11 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "amd",
+    "module": "umd",
     "target": "es5",
-    "outFile": "dist/amd/index.js",
+    "outDir": "dist/umd",
     "declarationDir": null,
-    "declaration": null
+    "declaration": true
   },
   "include": [
     "src/**/*.ts",
