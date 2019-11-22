@@ -45,16 +45,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 (function (factory) {
     if (typeof module === "object" && typeof module.exports === "object") {
         var v = factory(require, exports);
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "lodash.clonedeep", "./utils", "./utils"], factory);
+        define(["require", "exports", "lodash", "./utils", "./utils"], factory);
     }
 })(function (require, exports) {
     "use strict";
@@ -62,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
     }
     Object.defineProperty(exports, "__esModule", { value: true });
-    var lodash_clonedeep_1 = __importDefault(require("lodash.clonedeep"));
+    var lodash_1 = require("lodash");
     var utils_1 = require("./utils");
     __export(require("./utils"));
     var Transforms = /** @class */ (function () {
@@ -268,7 +265,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
                             url = _config.url, method = _config.method;
                             // else coverage needed
                             if (!config.__config) {
-                                config.__config = __assign(__assign({}, config), { __config: null, method: lodash_clonedeep_1.default(config.method), data: lodash_clonedeep_1.default(config.data), headers: lodash_clonedeep_1.default(config.headers), params: lodash_clonedeep_1.default(config.params), auth: lodash_clonedeep_1.default(config.auth), proxy: lodash_clonedeep_1.default(config.proxy) });
+                                config.__config = __assign(__assign({}, config), { __config: null, method: lodash_1.cloneDeep(config.method), data: lodash_1.cloneDeep(config.data), headers: lodash_1.cloneDeep(config.headers), params: lodash_1.cloneDeep(config.params), auth: lodash_1.cloneDeep(config.auth), proxy: lodash_1.cloneDeep(config.proxy) });
                             }
                             transformSet = this._getTransformSet(url, method);
                             return [4 /*yield*/, utils_1.transFormRequest(transformSet.request, __assign({}, _config), context)
