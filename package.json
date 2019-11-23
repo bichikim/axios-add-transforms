@@ -34,7 +34,7 @@
   "homepage": "https://github.com/bichikim/axios-add-transforms#readme",
   "dependencies": {
     "axios": "^0.19.0",
-    "lodash": "^4.17.15"
+    "lodash.clonedeep": "^4.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
