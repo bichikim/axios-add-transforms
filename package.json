@@ -29,6 +29,11 @@
   "keywords": [
     "axios"
   ],
+  "browserslist": [
+    "ie >= 10",
+    "not dead",
+    "last 2 versions"
+  ],
   "bugs": {
     "url": "https://github.com/bichikim/axios-add-transforms/issues"
   },
