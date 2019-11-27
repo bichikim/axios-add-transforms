@@ -14,7 +14,7 @@ module.exports = function (config) {
     frameworks: ['mocha', 'chai'],
     reporters: ['spec','coverage-istanbul'],
     files: [
-      'config/karma.polyfill.js',
+      '/karma.polyfill.js',
       {pattern: 'test/browser/**/*.spec.js', watched: false},
       {pattern: 'test/browser/**/*.spec.ts', watched: false},
       {pattern: 'test/both/**/*.spec.js', watched: false},
