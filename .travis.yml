@@ -9,4 +9,4 @@ deploy:
   api_key: $NPM_AUTH_KEY
   on:
     tags: true
-    repo: winter-love
+    repo: winter-love/axios-add-transforms
