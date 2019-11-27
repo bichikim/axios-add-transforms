@@ -1,10 +1,17 @@
 import vue from 'rollup-plugin-vue'
-import typescript from 'rollup-plugin-typescript'
+import typescript from 'rollup-plugin-typescript2'
 import commonjs from 'rollup-plugin-commonjs'
 import {name} from '../package.json'
 import pascalcase from 'pascalcase'
 import {terser} from 'rollup-plugin-terser'
 import alias from 'rollup-plugin-alias'
+const globals = {lodash: '_'}
+const external = ['axios', 'lodash']
+const typescriptOptions = {
+  tsconfig: 'tsconfig.bundle.json',
+  // objectHashIgnoreUnknownHack: false,
+  clean: true,
+}
 
 export default [
   // ESM build to be used with webpack/rollup.
@@ -15,7 +22,7 @@ export default [
         exports: 'named',
         file: 'dist/bundle.umd.js',
         format: 'umd',
-        globals: {vue: 'Vue'},
+        globals,
         name: pascalcase(name),
       },
       {
@@ -26,18 +33,18 @@ export default [
         exports: 'named',
         file: 'dist/bundle.min.js',
         format: 'iife',
-        globals: {vue: 'Vue'},
+        globals,
         name: pascalcase(name),
       },
       {
         exports: 'named',
         file: 'dist/bundle.js',
         format: 'iife',
-        globals: {vue: 'Vue'},
+        globals,
         name: pascalcase(name),
       },
     ],
-    external: ['vue'],
+    external,
     plugins: [
       alias({
         //optional, by default this will just look for .js files or folders
@@ -47,11 +54,7 @@ export default [
           {find:/^@\//, replacement: process.cwd() + '/src/'},
         ],
       }),
-      typescript({
-        tsconfig: false,
-        experimentalDecorators: true,
-        module: 'es2015',
-      }),
+      typescript(typescriptOptions),
       commonjs(),
       vue(),
       terser({
@@ -67,7 +70,7 @@ export default [
       format: 'cjs',
       file: 'dist/bundle.node.js',
     },
-    external: ['vue'],
+    external,
     plugins: [
       alias({
         //optional, by default this will just look for .js files or folders
@@ -77,11 +80,7 @@ export default [
           {find:/^@\//, replacement: process.cwd() + '/src/'},
         ],
       }),
-      typescript({
-        tsconfig: false,
-        experimentalDecorators: true,
-        module: 'es2015',
-      }),
+      typescript(typescriptOptions),
       commonjs(),
       vue({template: {optimizeSSR: true}}),
     ],
