@@ -3,9 +3,8 @@
   "version": "0.4.11",
   "description": "axios-add-transforms",
   "author": "bichi",
-  "main": "dist/umd/index.js",
-  "types": "dist/umd/index.d.ts",
-  "module": "dist/esm/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
     "build": "webpack --config config/webpack.config.js",
