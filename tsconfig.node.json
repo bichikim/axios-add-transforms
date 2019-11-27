@@ -2,13 +2,6 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2015"
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.js",
-    "**/*.tsx",
-    "**/*.vue",
-    "types/**/*.d.ts"
-  ]
+    "target": "esnext"
+  }
 }

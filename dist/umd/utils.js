@@ -1,21 +1,15 @@
-var __spreadArrays = (this && this.__spreadArrays) || function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
-};
 (function (factory) {
     if (typeof module === "object" && typeof module.exports === "object") {
         var v = factory(require, exports);
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports"], factory);
+        define(["require", "exports", "tslib"], factory);
     }
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var tslib_1 = require("tslib");
     function forEachPromise(items, value) {
         var args = [];
         for (var _i = 2; _i < arguments.length; _i++) {
@@ -23,7 +17,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
         }
         return items.reduce(function (promise, item) {
             return promise.then(function (value) {
-                var result = item.apply(void 0, __spreadArrays([value], args));
+                var result = item.apply(void 0, tslib_1.__spreadArrays([value], args));
                 if (typeof result.then === 'function') {
                     return result;
                 }

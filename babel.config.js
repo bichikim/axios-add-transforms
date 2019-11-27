@@ -1,14 +1,15 @@
 module.exports = {
-  presets: [
-    ['@vue/babel-preset-app', {
-      // for tree shacking
-      modules: false,
-      useBuiltIns: 'entry',
+  'presets': [
+    [
+      '@vue/babel-preset-jsx', {
+      'modules': false,
+      'useBuiltIns': 'entry',
     }],
   ],
-  env: {
-    test: {
-      plugins: ['istanbul'],
+  'env': {
+    'test': {
+      // 'presets': ['@vue/babel-preset-jsx'],
+      'plugins': ['istanbul'],
     },
   },
 }
