@@ -5,7 +5,7 @@ import Axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 
 const newTest = (options: TransformsOptions) => {
-  const axios = Axios.create({__info: {}, info: {}})
+  const axios = Axios.create({})
   const mock = new MockAdapter(axios)
   const transforms = new Transforms(options)
   transforms.applyTransform(axios)
