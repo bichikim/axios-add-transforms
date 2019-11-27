@@ -9,13 +9,12 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.umd.json",
-    "build:esm": "tsc -p tsconfig.esm.json",
     "doc": "typedoc -out ./docs ./src --media ./media",
     "test": "npm run test:unit",
     "lint": "eslint \"src/\"",
     "test:unit": "karma start config/karma.config.js --browsers=ChromeHeadless --single-run",
     "test:watch": "karma start config/karma.config.js --browsers=ChromeHeadless --auto-watch",
-    "preversion": "npm run test && npm run build && npm run build:esm"
+    "preversion": "npm run test && npm run build"
   },
   "files": [
     "dist",
