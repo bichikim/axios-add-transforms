@@ -6,7 +6,7 @@ after_success:
 deploy:
   provider: npm
   email: bichi@live.co.kr
-  api_key: $NPM_AUTH_KEY
+  api_key: NPM_AUTH_KEY
   on:
     tags: true
     repo: winter-love/axios-add-transforms
