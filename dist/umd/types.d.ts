@@ -3,7 +3,6 @@ declare module 'axios/index' {
     interface Status {
         retry?: number | boolean | null;
         originalConfig: AxiosRequestConfig;
-        [key: string]: any;
     }
     interface AxiosRequestConfig {
         __status?: Status | null;
