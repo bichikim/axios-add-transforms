@@ -5,6 +5,7 @@ import {name} from '../package.json'
 import pascalcase from 'pascalcase'
 import {terser} from 'rollup-plugin-terser'
 import alias from 'rollup-plugin-alias'
+
 const globals = {lodash: '_'}
 const external = ['axios', 'lodash']
 const typescriptOptions = {
