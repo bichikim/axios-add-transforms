@@ -8,7 +8,7 @@
   "module": "dist/bundle.esm.js",
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c config/rollup.config.js",
+    "build": "webpack --config config/webpack.config.js",
     "doc": "typedoc -out ./docs ./src --media ./media",
     "test": "npm run test:browser && npm run test:node",
     "lint": "eslint \"src/\"",
@@ -16,7 +16,7 @@
     "test:node:watch": "mocha --watch --watch-extensions ts,tsx \"test/node/**/*.spec.ts\" \"test/both/**/*.spec.ts\"",
     "test:browser": "karma start config/karma.config.js --browsers=ChromeHeadless,FirefoxHeadless --single-run",
     "test:browser:watch": "karma start config/karma.config.js --browsers=ChromeHeadless --auto-watch",
-    "mocha": "mochapack -r test/mochapack.js --webpack-config config/webpack.mocha.config.js \\\\\\\"test/browser/**/*.spec.ts\\\\\\\"",
+    "mocha": "mochapack -r test/mochapack.js --webpack-config config/webpack.mocha.config.js \"test/browser/**/*.spec.ts\"",
     "preversion": "npm run test && npm run build"
   },
   "files": [
