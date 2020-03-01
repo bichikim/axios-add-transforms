@@ -3,8 +3,10 @@
  * @author Bichi Kim <bichi@live.co.kr>
  */
 process.env.NODE_ENV = 'test'
-const webpack = require('./webpack.test.config.js')
+
 const path = require('path')
+const webpack = require('./webpack.test.config.js')
+
 module.exports = function (config) {
   config.set({
     basePath: '../',
@@ -12,7 +14,7 @@ module.exports = function (config) {
     frameworks: ['mocha', 'chai'],
     reporters: ['spec','coverage-istanbul'],
     files: [
-      'config/karma.polyfill.js',
+      '/karma.polyfill.js',
       {pattern: 'test/browser/**/*.spec.js', watched: false},
       {pattern: 'test/browser/**/*.spec.ts', watched: false},
       {pattern: 'test/both/**/*.spec.js', watched: false},

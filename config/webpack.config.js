@@ -1,11 +1,13 @@
-const webpackBaseConfig = require('./webpack.base.config')
-const path = require('path')
-const webpackMerge = require('webpack-merge')
-const Webpack = require('webpack')
 const packageJson = require('../package.json')
+const path = require('path')
+const Webpack = require('webpack')
+const webpackBaseConfig = require('./webpack.base.config')
+const webpackMerge = require('webpack-merge')
+
 const resolve = (dir) => {
   return path.join(__dirname, '..', dir)
 }
+
 module.exports = webpackMerge(webpackBaseConfig({mode: 'bundle', tsTranspileOnly: false}), {
   /**
    * Test in this project needs development

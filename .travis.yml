@@ -1,5 +1,13 @@
 language: node_js
 node_js:
-  - "8"
+- '8'
 after_success:
-  - codecov
+- codecov
+deploy:
+  provider: npm
+  email: bichi@live.co.kr
+  api_key:
+    secure: i+lfGy8dDk4rVygWBdEx+o/MN+wyI6U1ij34MhlY+auEzot9pvQkmLsJos7vN6zXRF/B+WgdNgSe0osjqG1i66K5S4dWSy/kFBzp2ZB6CaXUU7Y2H0zi0vDvpUJhHwRHkmW+E/afovHbnalIRtNm5LS26giZz0cMbtYCiJLWg1+v471ilOM6SDY5JSv/zw0BccOzQnLwTiNp2Mjp6qQ0I9+OMU9R6gcdotLZq0KAG481boFBMRMF5X7jPu0UO9DtQ6xyijjRLu3nNJOdShqtJi3WNSJ+FBXBjDVpk9IQxf88TLky5RA4ugq/uVDY2PtTNhBJOOSZ6k/sAMAkhrhnIV335RMG0dBvLwirPJ+/Mj5AJGQ/5lcCJwrb0LzVkHm6YCB4JzYuAv6Y/5PVwoLfQwxVhKigoU3UE0pSF2Qcq+jPHd8yHSJ0/JTiY82idXMUmI/p1zO4fooLw5703TO6tZ+quJ5MgEHbHDfq7nKGuV3WKkXphHLwrwyjadIMpLMBWBwNwF7xcjbqHFEG0j9LLNYoupT19SElxSub+BPkP1JVKNToe72H4A1gnKDVgOTisTtVBasQmgyWbiLKYfZDYr6L2HKWCJeKpIYdMchTKjO+4VBF983TUIl1eKFp1sM7q5JMLBaaUyejySAjtHoU77rpmTVBaAHy9q1AbvC6VHQ=
+  on:
+    tags: true
+    repo: winter-love/axios-add-transforms

@@ -1,20 +1,22 @@
 {
   "name": "axios-add-transforms",
-  "version": "0.4.11",
+  "version": "0.4.15",
   "description": "axios-add-transforms",
   "author": "bichi",
-  "main": "dist/index.js",
+  "main": "dist/bundle.js",
   "types": "dist/index.d.ts",
+  "module": "dist/bundle.esm.js",
   "license": "MIT",
   "scripts": {
-    "build": "webpack --config config/webpack.config.js",
+    "build": "rollup -c config/rollup.config.js",
     "doc": "typedoc -out ./docs ./src --media ./media",
     "test": "npm run test:browser && npm run test:node",
     "lint": "eslint \"src/\"",
     "test:node": "mocha \"test/node/**/*.spec.ts\" \"test/both/**/*.spec.ts\"",
     "test:node:watch": "mocha --watch --watch-extensions ts,tsx \"test/node/**/*.spec.ts\" \"test/both/**/*.spec.ts\"",
-    "test:browser": "karma start config/karma.config.js --browsers=ChromeHeadless --single-run",
+    "test:browser": "karma start config/karma.config.js --browsers=ChromeHeadless,FirefoxHeadless --single-run",
     "test:browser:watch": "karma start config/karma.config.js --browsers=ChromeHeadless --auto-watch",
+    "mocha": "mochapack -r test/mochapack.js --webpack-config config/webpack.mocha.config.js \\\\\\\"test/browser/**/*.spec.ts\\\\\\\"",
     "preversion": "npm run test && npm run build"
   },
   "files": [
@@ -29,15 +31,18 @@
   "keywords": [
     "axios"
   ],
+  "browserslist": [
+    "ie >= 10",
+    "not dead",
+    "last 2 versions"
+  ],
   "bugs": {
     "url": "https://github.com/bichikim/axios-add-transforms/issues"
   },
   "homepage": "https://github.com/bichikim/axios-add-transforms#readme",
   "dependencies": {
-    "lodash.clonedeep": "^4.5.0"
-  },
-  "peerDependencies": {
-    "axios": "^0.19.0"
+    "axios": "^0.19.0",
+    "lodash": "^4.17.15"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
@@ -47,11 +52,10 @@
     "@types/lodash": "^4.14.134",
     "@types/mocha": "^7.0.1",
     "@types/sinon": "^7.0.13",
-    "@typescript-eslint/eslint-plugin": "^2.3.0",
-    "@typescript-eslint/parser": "^2.3.0",
+    "@typescript-eslint/eslint-plugin": "^2.3.3",
+    "@typescript-eslint/parser": "^2.3.3",
     "@vue/babel-preset-jsx": "^1.1.0",
     "@vue/test-utils": "^1.0.0-beta.29",
-    "axios": "^0.19.0",
     "axios-mock-adapter": "^1.17.0",
     "babel-helper-vue-jsx-merge-props": "^2.0.3",
     "babel-loader": "^8.0.6",
@@ -63,15 +67,16 @@
     "codecov": "^3.6.1",
     "core-js": "^3.2.1",
     "css-loader": "^3.2.0",
-    "eslint": "^6.4.0",
+    "eslint": "^6.5.1",
     "eslint-friendly-formatter": "^4.0.1",
-    "eslint-loader": "^3.0.0",
-    "eslint-plugin-import": "^2.18.0",
-    "eslint-plugin-promise": "^4.1.1",
+    "eslint-loader": "^3.0.2",
+    "eslint-plugin-html": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-sort-class-members": "^1.5.0",
     "eslint-plugin-vue": "^6.0.0",
     "express": "^4.17.1",
-    "istanbul-instrumenter-loader": "^3.0.1",
+    "fork-ts-checker-webpack-plugin": "^3.1.0",
     "karma": "^4.1.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^3.1.0",
